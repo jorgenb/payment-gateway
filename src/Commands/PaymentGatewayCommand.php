@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Bilberry\PaymentGateway\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class PaymentGatewayCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'payment-gateway';
 
     public $description = 'My command';
 
