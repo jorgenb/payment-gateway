@@ -65,27 +65,27 @@ enum PaymentProvider: string
     public function extractExternalChargeId(array $payload): ?string
     {
         return match ($this) {
-            self::NETS   => data_get($payload, 'data.chargeId'),
+            self::NETS => data_get($payload, 'data.chargeId'),
             self::STRIPE => data_get($payload, 'data.object.latest_charge'),
-            self::ADYEN  => data_get($payload, 'notificationItems.0.NotificationRequestItem.pspReference'),
+            self::ADYEN => data_get($payload, 'notificationItems.0.NotificationRequestItem.pspReference'),
         };
     }
 
     public function extractAmountMinor(array $payload): ?int
     {
         return match ($this) {
-            self::NETS   => $this->intOrNull(data_get($payload, 'data.amount.amount')),
+            self::NETS => $this->intOrNull(data_get($payload, 'data.amount.amount')),
             self::STRIPE => $this->intOrNull(data_get($payload, 'data.object.amount')),
-            self::ADYEN  => $this->intOrNull(data_get($payload, 'notificationItems.0.NotificationRequestItem.amount.value')),
+            self::ADYEN => $this->intOrNull(data_get($payload, 'notificationItems.0.NotificationRequestItem.amount.value')),
         };
     }
 
     public function extractCurrency(array $payload): string
     {
         return match ($this) {
-            self::NETS   => mb_strtoupper((string) data_get($payload, 'data.amount.currency')),
+            self::NETS => mb_strtoupper((string) data_get($payload, 'data.amount.currency')),
             self::STRIPE => mb_strtoupper((string) data_get($payload, 'data.object.currency')),
-            self::ADYEN  => mb_strtoupper((string) data_get($payload, 'notificationItems.0.NotificationRequestItem.amount.currency')),
+            self::ADYEN => mb_strtoupper((string) data_get($payload, 'notificationItems.0.NotificationRequestItem.amount.currency')),
         };
     }
 
@@ -99,9 +99,9 @@ enum PaymentProvider: string
     public function resolveStatus(string $eventType): PaymentStatus
     {
         return match ($this) {
-            self::NETS   => PaymentStatus::fromNetsEvent($eventType),
+            self::NETS => PaymentStatus::fromNetsEvent($eventType),
             self::STRIPE => PaymentStatus::fromStripeEvent($eventType),
-            self::ADYEN  => PaymentStatus::fromAdyenEvent($eventType),
+            self::ADYEN => PaymentStatus::fromAdyenEvent($eventType),
         };
     }
 
@@ -153,11 +153,12 @@ enum PaymentProvider: string
     private function eventTypePath(): string
     {
         return match ($this) {
-            self::NETS   => 'event',
+            self::NETS => 'event',
             self::STRIPE => 'type',
-            self::ADYEN  => 'notificationItems.0.NotificationRequestItem.eventCode',
+            self::ADYEN => 'notificationItems.0.NotificationRequestItem.eventCode',
         };
     }
+
     private function intOrNull(mixed $value): ?int
     {
         return is_numeric($value) ? (int) $value : null;

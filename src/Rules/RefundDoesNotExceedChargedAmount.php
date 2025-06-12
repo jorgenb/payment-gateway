@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Rules;
 
+use Bilberry\PaymentGateway\Models\Payment;
 use Brick\Money\Money;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Bilberry\PaymentGateway\Models\Payment;
 
 class RefundDoesNotExceedChargedAmount implements ValidationRule
 {
@@ -19,8 +19,9 @@ class RefundDoesNotExceedChargedAmount implements ValidationRule
         $paymentId = request('payment_id');
         $payment = Payment::with('refunds')->find($paymentId);
 
-        if ( ! $payment) {
+        if (! $payment) {
             $fail('The selected payment is invalid.');
+
             return;
         }
 

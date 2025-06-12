@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bilberry\PaymentGateway\Data\PaymentRequestData;
+use Bilberry\PaymentGateway\Enums\PayableType;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Brick\Money\Money;
-use Bilberry\PaymentGateway\Enums\PayableType;
 
 it('correctly converts amount_minor and currency into Money', function (): void {
     $paymentRequestData = new PaymentRequestData(

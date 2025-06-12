@@ -4,24 +4,22 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Listeners\Handlers;
 
-use Illuminate\Support\Facades\Log;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
 use Bilberry\PaymentGateway\Listeners\PaymentEventListener;
 use Bilberry\PaymentGateway\Providers\NetsPaymentProvider;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
  * Handles payment events from the Nets payment provider.
+ *
  * @see PaymentEventListener
  */
 readonly class NetsPaymentEventHandler extends AbstractPaymentEventHandler
 {
-    public function __construct(private NetsPaymentProvider $netsPaymentProvider)
-    {
-    }
-
+    public function __construct(private NetsPaymentProvider $netsPaymentProvider) {}
 
     protected function resolvePaymentProvider(): PaymentProviderInterface
     {
@@ -34,14 +32,14 @@ readonly class NetsPaymentEventHandler extends AbstractPaymentEventHandler
     public function handleReservationCreated(PaymentEvent $event): void
     {
         $event->payment->update([
-            'status'      => PaymentStatus::RESERVED,
-            'external_id' => $event->callbackData->externalId
+            'status' => PaymentStatus::RESERVED,
+            'external_id' => $event->callbackData->externalId,
         ]);
 
         Log::info(static::class.': Payment reserved', ['event' => $event]);
 
         // Only capture if capture_at is not set.
-        if (null === $event->payment->capture_at) {
+        if ($event->payment->capture_at === null) {
             try {
                 Log::info(static::class.': Capturing payment', [
                     'event' => $event,
@@ -49,7 +47,7 @@ readonly class NetsPaymentEventHandler extends AbstractPaymentEventHandler
                 $this->netsPaymentProvider->charge($event->payment);
             } catch (Throwable $exception) {
                 Log::error(static::class.': Failed to auto-capture payment', [
-                    'event'   => $event,
+                    'event' => $event,
                     'message' => $exception->getMessage(),
                 ]);
             }

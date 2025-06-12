@@ -25,7 +25,7 @@ it('handles adyen callback events', function (array $data): void {
         ]);
 
     $response = $this->postJson(
-  'payments/callback/adyen',
+        route('api.payments.callback', ['provider' => PaymentProvider::ADYEN->value]),
         $data
     );
 

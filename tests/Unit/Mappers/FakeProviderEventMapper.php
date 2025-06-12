@@ -21,5 +21,3 @@ class FakeProviderEventMapper extends ProviderToStatusMapper
         return 'default.event';
     }
 }
-
-

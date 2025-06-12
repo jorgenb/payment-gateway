@@ -14,8 +14,8 @@ namespace Bilberry\PaymentGateway\Enums\Mappers;
  * This allows the application to standardize how provider events are converted
  * to internal status values, and vice versa, while centralizing fallback handling.
  */
-use Illuminate\Support\Facades\Log;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
+use Illuminate\Support\Facades\Log;
 
 abstract class ProviderToStatusMapper
 {
@@ -53,6 +53,7 @@ abstract class ProviderToStatusMapper
         }
 
         static::fallback($status->value);
+
         return static::defaultProviderEvent();
     }
 
@@ -60,7 +61,7 @@ abstract class ProviderToStatusMapper
      * Logs a warning and returns a default PaymentStatus::PENDING
      * when no matching status is found for a given event or status value.
      *
-     * @param string $value The unmatched event or status string
+     * @param  string  $value  The unmatched event or status string
      * @return PaymentStatus Fallback status (PENDING)
      *
      * This may occur if a payment provider (like Stripe) sends a callback
@@ -70,6 +71,7 @@ abstract class ProviderToStatusMapper
     protected static function fallback(string $value): PaymentStatus
     {
         Log::warning('Unhandled event or status: '.$value);
+
         return PaymentStatus::UNHANDLED;
     }
 
@@ -77,8 +79,6 @@ abstract class ProviderToStatusMapper
      * Returns a default provider event string when no matching event is found.
      *
      * Subclasses may override this to provide a provider-specific fallback event name.
-     *
-     * @return string
      */
     protected static function defaultProviderEvent(): string
     {

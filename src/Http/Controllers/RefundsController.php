@@ -11,7 +11,7 @@ use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Bilberry\PaymentGateway\Services\PaymentGateway;
 use Throwable;
 
-class RefundsApiController extends Controller
+class RefundsController extends Controller
 {
     /**
      * Initiates a refund of a charge using a specified provider.
@@ -22,9 +22,6 @@ class RefundsApiController extends Controller
      * The payment ID is always used as the reference when initiating the refund request using this API.
      *
      * Note: The refund reason is currently not implemented and forwarded to the payment provider.
-     *
-     * @param  PaymentRefundData  $data
-     * @return RefundResponse
      */
     public function store(PaymentRefundData $data): RefundResponse
     {

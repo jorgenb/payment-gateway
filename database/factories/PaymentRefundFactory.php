@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
-use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Bilberry\PaymentGateway\Models\Payment;
+use Bilberry\PaymentGateway\Models\PaymentRefund;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class PaymentRefundFactory extends Factory
 {
@@ -16,12 +16,12 @@ class PaymentRefundFactory extends Factory
     public function definition(): array
     {
         return [
-            'payment_id'          => Payment::factory(),
+            'payment_id' => Payment::factory(),
             'amount_minor' => $this->faker->numberBetween(100, 10000),
-            'currency'            => 'NOK',
-            'status'              => PaymentStatus::REFUND_INITIATED,
-            'external_refund_id'  => null,
-            'metadata'            => [],
+            'currency' => 'NOK',
+            'status' => PaymentStatus::REFUND_INITIATED,
+            'external_refund_id' => null,
+            'metadata' => [],
         ];
     }
 

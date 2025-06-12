@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Models;
 
+use Bilberry\PaymentGateway\Database\Factories\PaymentFactory;
+use Bilberry\PaymentGateway\Enums\PayableType;
+use Bilberry\PaymentGateway\Enums\PaymentProvider;
+use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\Exception\RoundingNecessaryException;
 use Brick\Money\Exception\UnknownCurrencyException;
@@ -15,10 +19,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Bilberry\PaymentGateway\Database\Factories\PaymentFactory;
-use Bilberry\PaymentGateway\Enums\PayableType;
-use Bilberry\PaymentGateway\Enums\PaymentProvider;
-use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use RuntimeException;
 
 /**
@@ -41,7 +41,6 @@ use RuntimeException;
  * @property-read Collection|PaymentEvent[] $events
  * @property-read Collection|PaymentRefund[] $refunds
  */
-
 class Payment extends Model
 {
     use HasFactory;
@@ -80,12 +79,12 @@ class Payment extends Model
 
     protected $casts = [
         'payable_type' => PayableType::class,
-        'capture_at'   => 'immutable_datetime',
-        'provider'     => PaymentProvider::class,
-        'status'       => PaymentStatus::class,
-        'metadata'     => 'array',
+        'capture_at' => 'immutable_datetime',
+        'provider' => PaymentProvider::class,
+        'status' => PaymentStatus::class,
+        'metadata' => 'array',
         'amount_minor' => 'integer',
-        'type'         => 'string',
+        'type' => 'string',
         'auto_capture' => 'boolean',
     ];
 
@@ -116,11 +115,11 @@ class Payment extends Model
      */
     public function getTotalChargedAmountAttribute(): Money
     {
-        if (null === $this->currency) {
+        if ($this->currency === null) {
             throw new RuntimeException('Currency must be set before accessing total_charged_amount.');
         }
 
-        $amount = PaymentStatus::CHARGED === $this->status
+        $amount = $this->status === PaymentStatus::CHARGED
             ? $this->amount_minor
             : 0;
 
@@ -169,17 +168,15 @@ class Payment extends Model
      * For Nets: always returns null (no support for capture config).
      *
      * If `capture_at` is set, auto-capture is explicitly disabled.
-     *
-     * @return string|int|null
      */
     public function getCaptureConfigurationForProvider(): string|int|null
     {
-        $manual = null !== $this->capture_at || false === $this->auto_capture;
+        $manual = $this->capture_at !== null || $this->auto_capture === false;
 
         return match ($this->provider) {
             PaymentProvider::STRIPE => $manual ? 'manual' : 'automatic',
-            PaymentProvider::ADYEN  => $manual ? null : 0,
-            PaymentProvider::NETS   => null,
+            PaymentProvider::ADYEN => $manual ? null : 0,
+            PaymentProvider::NETS => null,
         };
     }
 

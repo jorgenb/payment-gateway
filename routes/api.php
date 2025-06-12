@@ -1,20 +1,20 @@
 <?php
 
 use Bilberry\PaymentGateway\Http\Controllers\PaymentCallbackController;
-use Bilberry\PaymentGateway\Http\Controllers\PaymentsApiController;
-use Bilberry\PaymentGateway\Http\Controllers\RefundsApiController;
+use Bilberry\PaymentGateway\Http\Controllers\PaymentsController;
+use Bilberry\PaymentGateway\Http\Controllers\RefundsController;
 use Bilberry\PaymentGateway\Http\Middleware\ProviderWebhookAuthorization;
 use Illuminate\Support\Facades\Route;
 
-//// TODO: figure out how to handle middleware
-Route::middleware(['client'])->prefix('v1')->group(function (): void {
-    Route::apiResource('payments', PaymentsApiController::class)->names('api.payments')->only(['store']);
-    Route::get('/payments/{payment}', [PaymentsApiController::class, 'show'])->name('api.payments.show');
-    Route::post('/payments/{payment}/cancel', [PaymentsApiController::class, 'cancel'])->name('api.payments.cancel');
-    Route::post('/payments/{payment}/charge', [PaymentsApiController::class, 'charge'])->name('api.payments.charge');
-    Route::apiResource('refunds', RefundsApiController::class)->names('api.refunds')->only(['store']);
+Route::middleware(['client'])->prefix('api/v1')->group(function (): void {
+    Route::get('/payments/{payment}', [PaymentsController::class, 'show'])->name('api.payments.show');
+    Route::post('payments', [PaymentsController::class, 'store'])->name('api.payments.store');
+    Route::post('/payments/{payment}/cancel', [PaymentsController::class, 'cancel'])->name('api.payments.cancel');
+    Route::post('/payments/{payment}/charge', [PaymentsController::class, 'charge'])->name('api.payments.charge');
+    Route::post('refunds', [RefundsController::class, 'store'])->name('api.refunds.store');
 });
 
 Route::post('/payments/callback/{provider}', [PaymentCallbackController::class, 'handleCallback'])
+    ->prefix('api/v1')
     ->name('api.payments.callback')
     ->middleware(ProviderWebhookAuthorization::class);

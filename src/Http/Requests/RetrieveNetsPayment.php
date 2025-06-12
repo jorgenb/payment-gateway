@@ -11,13 +11,12 @@ class RetrieveNetsPayment extends Request
 {
     public function __construct(
         protected readonly string $netsPaymentId
-    ) {
-    }
+    ) {}
+
     /**
      * The HTTP method of the request
      */
     protected Method $method = Method::GET;
-
 
     /**
      * The endpoint for the request

@@ -2,17 +2,14 @@
 
 namespace Bilberry\PaymentGateway;
 
-use Adyen\Client as AdyenClient;
-use Adyen\Environment;
-use Adyen\Service\Checkout\ModificationsApi;
-use Adyen\Service\Checkout\PaymentsApi;
-use Adyen\Service\Management\WebhooksMerchantLevelApi;
 use Bilberry\PaymentGateway\Commands\ConfigureAdyenWebhooksCommand;
 use Bilberry\PaymentGateway\Commands\ConfigureStripeWebhooksCommand;
+use Bilberry\PaymentGateway\Commands\PaymentGatewayCommand;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Http\Controllers\PaymentCallbackController;
-use Bilberry\PaymentGateway\Http\Controllers\PaymentsApiController;
+use Bilberry\PaymentGateway\Http\Controllers\PaymentsController;
 use Bilberry\PaymentGateway\Http\Middleware\ProviderWebhookAuthorization;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
 use Bilberry\PaymentGateway\Providers\AdyenPaymentProvider;
 use Bilberry\PaymentGateway\Providers\EventServiceProvider;
@@ -23,8 +20,6 @@ use Illuminate\Routing\Router;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use Bilberry\PaymentGateway\Commands\PaymentGatewayCommand;
-use Stripe\StripeClient;
 
 class PaymentGatewayServiceProvider extends PackageServiceProvider
 {
@@ -33,9 +28,14 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
      */
     public function bootingPackage(): void
     {
+        if (! $this->app->bound(PaymentProviderConfigResolverInterface::class)) {
+            throw new \RuntimeException('You must bind PaymentProviderConfigResolverInterface in your application.');
+        }
+
         $this->app->make(Router::class)
             ->aliasMiddleware('webhooks', ProviderWebhookAuthorization::class);
     }
+
     public function configurePackage(Package $package): void
     {
         /*
@@ -70,51 +70,35 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
 
         $this->app->register(EventServiceProvider::class);
 
-        $this->app->singleton(NetsPaymentProvider::class);
-        $this->app->singleton(StripePaymentProvider::class);
-        $this->app->singleton(AdyenPaymentProvider::class);
-
-        $this->app->singleton(StripeClient::class, function () {
-            $secret = config('services.stripe.secret');
-
-            if ( ! is_string($secret) || empty($secret)) {
-                throw new InvalidArgumentException('Stripe secret is not configured properly.');
-            }
-
-            return new StripeClient($secret);
+        // Register payment providers with injected config resolver
+        $this->app->singleton(AdyenPaymentProvider::class, function ($app) {
+            return new AdyenPaymentProvider(
+                $app->make(PaymentProviderConfigResolverInterface::class)
+            );
         });
-        $this->app->singleton(AdyenClient::class, function () {
-
-            $secret = config('services.adyen.api_key');
-
-            if ( ! is_string($secret) || empty($secret)) {
-                throw new InvalidArgumentException('Adyen secret is not configured properly.');
-            }
-
-            $client = new AdyenClient();
-            $client->setXApiKey($secret);
-            $environment = app()->environment(['local', 'staging', 'testing']) ? Environment::TEST : Environment::LIVE;
-            $client->setEnvironment($environment);
-            return $client;
-        });
-        $this->app->singleton(WebhooksMerchantLevelApi::class, fn ($app) => new WebhooksMerchantLevelApi($app->make(AdyenClient::class)));
-
-        $this->app->singleton(PaymentsApi::class, fn ($app) => new PaymentsApi($app->make(AdyenClient::class)));
-        $this->app->singleton(ModificationsApi::class, fn ($app) => new ModificationsApi($app->make(AdyenClient::class)));
-
+        //        $this->app->singleton(StripePaymentProvider::class, function ($app) {
+        //            return new StripePaymentProvider(
+        //                $app->make(PaymentProviderConfigResolverInterface::class)
+        //            );
+        //        });
+        //        $this->app->singleton(NetsPaymentProvider::class, function ($app) {
+        //            return new NetsPaymentProvider(
+        //                $app->make(PaymentProviderConfigResolverInterface::class)
+        //            );
+        //        });
 
         $bindProvider = function ($app) {
             $provider = request()->get('provider') ?? request()->route('provider');
 
-            if ( ! $provider) {
+            if (! $provider) {
                 return null;
             }
 
             return match (PaymentProvider::tryFrom($provider)) {
-                PaymentProvider::NETS   => $app->make(NetsPaymentProvider::class),
+                PaymentProvider::NETS => $app->make(NetsPaymentProvider::class),
                 PaymentProvider::STRIPE => $app->make(StripePaymentProvider::class),
-                PaymentProvider::ADYEN  => $app->make(AdyenPaymentProvider::class),
-                default                 => throw new InvalidArgumentException("Unsupported payment provider: {$provider}")
+                PaymentProvider::ADYEN => $app->make(AdyenPaymentProvider::class),
+                default => throw new InvalidArgumentException("Unsupported payment provider: {$provider}")
             };
         };
 
@@ -122,7 +106,7 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
             ->needs(PaymentProviderInterface::class)
             ->give($bindProvider);
 
-        $this->app->when(PaymentsApiController::class)
+        $this->app->when(PaymentsController::class)
             ->needs(PaymentProviderInterface::class)
             ->give($bindProvider);
     }

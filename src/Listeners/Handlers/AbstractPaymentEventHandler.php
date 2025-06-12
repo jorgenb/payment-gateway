@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Listeners\Handlers;
 
+use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
 use Bilberry\PaymentGateway\Events\RefundEvent;
 use Bilberry\PaymentGateway\Interfaces\PaymentEventHandlerInterface;
-use Illuminate\Support\Facades\Log;
-use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
+use Illuminate\Support\Facades\Log;
 
 abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandlerInterface
 {
@@ -58,8 +58,8 @@ abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandl
     public function handleChargeCreated(PaymentEvent $event): void
     {
         $event->payment->update([
-            'status'             => PaymentStatus::CHARGED,
-            'external_charge_id' => $event->callbackData->externalChargeId
+            'status' => PaymentStatus::CHARGED,
+            'external_charge_id' => $event->callbackData->externalChargeId,
         ]);
 
         Log::info(static::class.': Charge created', ['event' => $event]);
@@ -116,14 +116,14 @@ abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandl
     public function handleReservationCreated(PaymentEvent $event): void
     {
         $event->payment->update([
-            'status'      => PaymentStatus::RESERVED,
-            'external_id' => $event->callbackData->externalId
+            'status' => PaymentStatus::RESERVED,
+            'external_id' => $event->callbackData->externalId,
         ]);
 
         Log::info(static::class.': Payment reserved', ['event' => $event]);
 
         // Only auto-capture if capture_at is not set and auto_capture is explicitly enabled
-        if (null === $event->payment->capture_at && true === $event->payment->auto_capture) {
+        if ($event->payment->capture_at === null && $event->payment->auto_capture === true) {
             $event->payment->update(['status' => PaymentStatus::CHARGED]);
             Log::info(static::class.': Auto-capture enabled. Marking payment as charged.', ['event' => $event]);
         }
@@ -134,8 +134,9 @@ abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandl
      */
     public function handleRefundCompleted(RefundEvent $event): void
     {
-        if (PaymentStatus::CANCELLED === $event->refund->payment->status) {
+        if ($event->refund->payment->status === PaymentStatus::CANCELLED) {
             Log::info(static::class.': Refund event received for already cancelled payment. Skipping further processing.', ['event' => $event]);
+
             return;
         }
 
@@ -149,11 +150,11 @@ abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandl
                 $refund->update(['status' => PaymentStatus::REFUNDED]);
             } else {
                 PaymentRefund::create([
-                    'external_refund_id'  => $externalRefundId,
+                    'external_refund_id' => $externalRefundId,
                     'amount_minor' => $amount->getMinorAmount(),
-                    'currency'            => $amount->getCurrency(),
-                    'status'              => PaymentStatus::REFUNDED,
-                    'metadata'            => [],
+                    'currency' => $amount->getCurrency(),
+                    'status' => PaymentStatus::REFUNDED,
+                    'metadata' => [],
                 ]);
 
                 Log::info(static::class.': Refund completed for non-existing refund. Creating new refund record.', ['event' => $event]);
@@ -197,6 +198,4 @@ abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandl
     {
         Log::info(static::class.': Processing', ['event' => $event]);
     }
-
-
 }

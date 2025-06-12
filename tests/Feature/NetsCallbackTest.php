@@ -23,17 +23,17 @@ it('handles nets callback events', function (array $data): void {
         ->nets()
         ->pending()
         ->create([
-            'id'          => $data['data']['myReference'],
-            'external_id' => $data['data']['paymentId']
+            'id' => $data['data']['myReference'],
+            'external_id' => $data['data']['paymentId'],
         ]);
 
     $response = $this->withoutMiddleware([ProviderWebhookAuthorization::class])->postJson(
-        'payments/callback/nets', $data
+        route('api.payments.callback', PaymentProvider::NETS->value), $data
     );
 
     $response->assertSuccessful();
 
-    if (PaymentStatus::UNHANDLED !== PaymentStatus::fromNetsEvent($data['event'])) {
+    if (PaymentStatus::fromNetsEvent($data['event']) !== PaymentStatus::UNHANDLED) {
         $this->netsPaymentProvider->shouldHaveReceived('handleCallback')->once();
     }
 

@@ -11,18 +11,18 @@ class StripeEventMapper extends ProviderToStatusMapper
     protected static function map(): array
     {
         return [
-            'payment_intent.succeeded'                 => PaymentStatus::RESERVED,
-            'payment_intent.canceled'                  => PaymentStatus::CANCELLED,
-            'payment_intent.payment_failed'            => PaymentStatus::FAILED,
-            'payment_intent.created'                   => PaymentStatus::INITIATED,
-            'refund.created'                           => PaymentStatus::REFUNDED,
-            'refund.failed'                            => PaymentStatus::REFUND_FAILED,
+            'payment_intent.succeeded' => PaymentStatus::RESERVED,
+            'payment_intent.canceled' => PaymentStatus::CANCELLED,
+            'payment_intent.payment_failed' => PaymentStatus::FAILED,
+            'payment_intent.created' => PaymentStatus::INITIATED,
+            'refund.created' => PaymentStatus::REFUNDED,
+            'refund.failed' => PaymentStatus::REFUND_FAILED,
             'payment_intent.amount_capturable_updated' => PaymentStatus::RESERVED,
-            'payment_intent.processing'                => PaymentStatus::PENDING,
-            'payment_intent.requires_action'           => PaymentStatus::REQUIRES_ACTION,
-            'internal'                                 => PaymentStatus::PENDING,
-            'processing'                               => PaymentStatus::PROCESSING,
-            'initiated'                                => PaymentStatus::INITIATED,
+            'payment_intent.processing' => PaymentStatus::PENDING,
+            'payment_intent.requires_action' => PaymentStatus::REQUIRES_ACTION,
+            'internal' => PaymentStatus::PENDING,
+            'processing' => PaymentStatus::PROCESSING,
+            'initiated' => PaymentStatus::INITIATED,
         ];
     }
 

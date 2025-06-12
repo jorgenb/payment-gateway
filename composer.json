@@ -1,12 +1,12 @@
 {
-    "name": "jorgenb/payment-gateway",
+    "name": "adventure-tech/payment-gateway",
     "description": "This is my package payment-gateway",
     "keywords": [
         "Bilberry",
         "laravel",
         "payment-gateway"
     ],
-    "homepage": "https://github.com/jorgenb/payment-gateway",
+    "homepage": "https://github.com/adventure-tech/payment-gateway",
     "license": "MIT",
     "authors": [
         {

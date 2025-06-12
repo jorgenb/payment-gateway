@@ -16,9 +16,7 @@ class NetsCancelPaymentRequest extends Request implements HasBody
 
     protected Method $method = Method::POST;
 
-    public function __construct(protected readonly Payment $payment)
-    {
-    }
+    public function __construct(protected readonly Payment $payment) {}
 
     /**
      * Resolve the endpoint for canceling a payment.

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bilberry\PaymentGateway\Connectors;
 
 use Illuminate\Support\Str;
-use InvalidArgumentException;
 use Saloon\Enums\Method;
 use Saloon\Http\Connector;
 use Saloon\Http\Faking\MockClient;
@@ -19,24 +18,32 @@ class NetsConnector extends Connector
     use AcceptsJson;
     use AlwaysThrowOnErrors;
 
+    protected string $apiKey;
+
+    protected string $merchantAccount;
+
+    /**
+     * NetsConnector constructor.
+     */
+    public function __construct(string $apiKey, string $merchantAccount)
+    {
+        $this->apiKey = $apiKey;
+        $this->merchantAccount = $merchantAccount;
+    }
+
     /**
      * The Base URL of the API
      */
     public function resolveBaseUrl(): string
     {
-        return config('services.nets.base_url');
+        return config('payment-gateway.nets.base_url');
     }
 
     protected function defaultHeaders(): array
     {
-        $secret = config('services.nets.secret');
-
-        if ( ! is_string($secret) || empty($secret)) {
-            throw new InvalidArgumentException('Nets secret is not configured properly.');
-        }
         return [
-            'Content-Type'  => 'application/json',
-            'Authorization' => 'Bearer '.$secret,
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Bearer '.$this->apiKey,
         ];
     }
 
@@ -50,7 +57,7 @@ class NetsConnector extends Connector
         ?callable $handleRetry = null
     ): Response {
 
-        if (Method::POST === $request->getMethod() && null === $request->headers()->get('Idempotency-Key')) {
+        if ($request->getMethod() === Method::POST && $request->headers()->get('Idempotency-Key') === null) {
             $request->headers()->add('Idempotency-Key', $this->generateIdempotencyKey());
         }
 

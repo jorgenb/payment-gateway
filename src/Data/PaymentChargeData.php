@@ -14,13 +14,12 @@ class PaymentChargeData extends Data
         public readonly PaymentProvider $provider,
         public readonly string $paymentId,
         public readonly ?string $orderReference = null,
-    ) {
-    }
+    ) {}
 
     public static function rules(): array
     {
         return [
-            'provider'  => 'required|in:'.implode(',', array_map(fn ($provider) => $provider->value, PaymentProvider::cases())),
+            'provider' => 'required|in:'.implode(',', array_map(fn ($provider) => $provider->value, PaymentProvider::cases())),
             'paymentId' => 'required|string|exists:payments,id',
         ];
     }

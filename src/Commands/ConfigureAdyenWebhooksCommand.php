@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Commands;
 
-use Illuminate\Console\Command;
-use Adyen\Service\Management\WebhooksMerchantLevelApi;
 use Adyen\Model\Management\CreateMerchantWebhookRequest;
+use Adyen\Service\Management\WebhooksMerchantLevelApi;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Exception;
+use Illuminate\Console\Command;
 
 class ConfigureAdyenWebhooksCommand extends Command
 {
     protected $signature = 'adyen:webhook:setup';
+
     protected $description = 'Configure webhook for Adyen Merchant and retrieve the HMAC key';
 
     public function handle(): int
@@ -25,11 +26,11 @@ class ConfigureAdyenWebhooksCommand extends Command
 
         try {
             $request = new CreateMerchantWebhookRequest([
-                'type'                => 'standard',
-                'url'                 => $webhookUrl,
+                'type' => 'standard',
+                'url' => $webhookUrl,
                 'communicationFormat' => 'json',
-                'sslVersion'          => 'TLSv1.2',
-                'active'              => true,
+                'sslVersion' => 'TLSv1.2',
+                'active' => true,
             ]);
 
             $webhook = $webhooksApi->setUpWebhook($merchantAccount, $request);
@@ -47,6 +48,7 @@ class ConfigureAdyenWebhooksCommand extends Command
             return self::SUCCESS;
         } catch (Exception $e) {
             $this->error("Failed to create webhook: {$e->getMessage()}");
+
             return self::FAILURE;
         }
     }
@@ -54,6 +56,7 @@ class ConfigureAdyenWebhooksCommand extends Command
     private function getRoute(): string
     {
         $relativeUrl = route('api.payments.callback', [PaymentProvider::ADYEN->value], false);
+
         return secure_url($relativeUrl);
     }
 }

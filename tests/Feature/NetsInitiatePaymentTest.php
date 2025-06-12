@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
-use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Providers\NetsPaymentProvider;
+use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Saloon\Exceptions\Request\ClientException;
 
 uses(RefreshDatabase::class, MocksNetsPayments::class);
 
 beforeEach(function (): void {
-    $this->provider = new NetsPaymentProvider();
+    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
+    $this->provider = new NetsPaymentProvider($resolver);
 });
 
 it('initiates a payment and records events', function ($paymentId): void {
@@ -49,7 +51,7 @@ it('handles failed payment creation', function (): void {
 
     $payment = Payment::factory()->nets()->pending()->create([
         'amount_minor' => 10000,
-        'external_id'  => null
+        'external_id' => null,
     ]);
 
     expect(fn () => $this->provider->initiate($payment))

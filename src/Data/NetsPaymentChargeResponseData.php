@@ -11,6 +11,5 @@ class NetsPaymentChargeResponseData extends Data
     public function __construct(
         public readonly string $chargeId,
         public readonly array $rawPayload = [],
-    ) {
-    }
+    ) {}
 }

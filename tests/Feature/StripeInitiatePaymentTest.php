@@ -4,43 +4,57 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Providers\StripePaymentProvider;
-use Stripe\Exception\InvalidRequestException;
-use Stripe\PaymentIntent;
-use Stripe\StripeClient;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Stripe\ApiRequestor;
+use Stripe\HttpClient\ClientInterface;
 
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->externalPaymentId = 'pi_test_123';
+    // Set a custom mock HTTP client that implements ClientInterface
+    ApiRequestor::setHttpClient(new class implements ClientInterface
+    {
+        public function request(
+            $method,
+            $absUrl,
+            $headers,
+            $params,
+            $hasFile,
+            $apiMode = 'v1',
+            $maxNetworkRetries = null
+        ) {
+            $body = json_encode([
+                'id' => 'pi_test_123',
+                'client_secret' => 'cs_test_abc',
+                'status' => 'requires_confirmation',
+            ]);
+
+            return [$body, 200, []];
+        }
+    });
+});
+
+afterEach(function (): void {
+    // Reset the HTTP client to avoid side effects
+    ApiRequestor::setHttpClient(null);
 });
 
 it('initiates a payment and records events', function (): void {
-    $paymentIntent = PaymentIntent::constructFrom([
-        'id'            => $this->externalPaymentId,
-        'client_secret' => 'cs_test_abc',
-        'status'        => 'requires_confirmation',
-    ]);
+    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
+    $provider = new StripePaymentProvider($resolver);
 
-    $paymentIntentsServiceMock = Mockery::mock();
-    $paymentIntentsServiceMock->shouldReceive('create')->andReturn($paymentIntent);
-
-    $stripeClientMock = Mockery::mock(StripeClient::class);
-    $stripeClientMock->paymentIntents = $paymentIntentsServiceMock;
-
-    $this->provider = new StripePaymentProvider($stripeClientMock);
     $payment = Payment::factory()->stripe()->pending()->create([
-        'amount_minor'       => 10000,
-        'external_id'        => null,
+        'amount_minor' => 10000,
+        'external_id' => null,
         'external_charge_id' => null,
     ]);
 
-    $response = $this->provider->initiate($payment);
+    $response = $provider->initiate($payment);
 
     $payment->refresh();
 
@@ -51,32 +65,40 @@ it('initiates a payment and records events', function (): void {
         ->provider->toBe(PaymentProvider::STRIPE)
         ->amount_minor->toBe(10000)
         ->currency->toBe('NOK')
-        ->external_id->toBe($this->externalPaymentId)
+        ->external_id->toBe('pi_test_123')
         ->and($payment->events)->toHaveCount(1)
         ->sequence(
             fn ($event) => $event->event->toBe(PaymentStatus::INITIATED->value)
         );
-
 });
 
 it('handles failed payment creation', function (): void {
-    $stripePaymentIntentMock = Mockery::mock();
-    $stripePaymentIntentMock->shouldReceive('create')->andThrow(
-        new InvalidRequestException('Invalid request', 400)
-    );
+    // Set a mock HTTP client that throws an exception on request
+    ApiRequestor::setHttpClient(new class implements ClientInterface
+    {
+        public function request(
+            $method,
+            $absUrl,
+            $headers,
+            $params,
+            $hasFile,
+            $apiMode = 'v1',
+            $maxNetworkRetries = null
+        ) {
+            throw new \Stripe\Exception\InvalidRequestException('Invalid request', 400);
+        }
+    });
 
-    $stripeClientMock = Mockery::mock(StripeClient::class);
-    $stripeClientMock->paymentIntents = $stripePaymentIntentMock;
-
-    $this->provider = new StripePaymentProvider($stripeClientMock);
+    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
+    $provider = new StripePaymentProvider($resolver);
 
     $payment = Payment::factory()->stripe()->pending()->create([
         'amount_minor' => 10000,
-        'external_id'  => null,
+        'external_id' => null,
     ]);
 
-    expect(fn () => $this->provider->initiate($payment))
-        ->toThrow(InvalidRequestException::class);
+    expect(fn () => $provider->initiate($payment))
+        ->toThrow(\Stripe\Exception\InvalidRequestException::class);
 
     $payment->refresh();
 

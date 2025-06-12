@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments\Api;
 
-use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Models\FakePayable;
 use Bilberry\PaymentGateway\Models\Payment;
+use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
 
 uses(MocksNetsPayments::class);
 
@@ -17,12 +16,12 @@ it('initiates a payment via the API and records events', function ($paymentId): 
     $this->mockNetsSuccessfulPayment($paymentId);
 
     $payload = [
-        'provider'     => 'nets',
-        'currency'     => 'NOK',
+        'provider' => 'nets',
+        'currency' => 'NOK',
         'amount_minor' => 10000,
-        'payable_id'   => FakePayable::factory()->create()->id,
+        'payable_id' => FakePayable::factory()->create()->id,
         'payable_type' => 'fake_payable',
-        'capture_at'   => null,
+        'capture_at' => null,
     ];
 
     $response = $this

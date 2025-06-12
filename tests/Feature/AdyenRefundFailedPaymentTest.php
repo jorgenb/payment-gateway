@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Mockery;
+use Adyen\Service\Checkout\ModificationsApi;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
-use Adyen\Service\Checkout\ModificationsApi;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 
 uses(RefreshDatabase::class);
 
@@ -28,8 +28,8 @@ it('handles refund failed callback', function ($refundFailedCallbackPayload): vo
     // Seed a payment with id matching the merchantReference
     $payment = Payment::factory()->adyen()->charged()->create(['id' => $merchantReference]);
     $refund = PaymentRefund::factory()->create([
-        'payment_id'         => $payment->id,
-        'status'             => PaymentStatus::PROCESSING,
+        'payment_id' => $payment->id,
+        'status' => PaymentStatus::PROCESSING,
         'external_refund_id' => $externalId,
     ]);
 
@@ -44,6 +44,6 @@ it('handles refund failed callback', function ($refundFailedCallbackPayload): vo
     // Refresh and assert refund is marked as failed
     $refund->refresh();
     expect($refund->status)->toBe(PaymentStatus::REFUND_FAILED->value);
-    //->and($refund->failure_reason)->toBe('Refund Failed');
+    // ->and($refund->failure_reason)->toBe('Refund Failed');
 
 })->with('adyen refund failed callback request');

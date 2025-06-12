@@ -4,11 +4,6 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Listeners;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Events\Dispatchable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Events\ExternalPaymentEvent;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
@@ -19,6 +14,11 @@ use Bilberry\PaymentGateway\Listeners\Handlers\StripePaymentEventHandler;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentEvent as PaymentEventLog;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Throwable;
 
 class ExternalPaymentEventListener implements ShouldQueue
@@ -35,8 +35,7 @@ class ExternalPaymentEventListener implements ShouldQueue
         private readonly NetsPaymentEventHandler $netsHandler,
         private readonly StripePaymentEventHandler $stripeHandler,
         private readonly AdyenPaymentEventHandler $adyenHandler,
-    ) {
-    }
+    ) {}
 
     /**
      * Handle the queued external payment event.
@@ -56,16 +55,16 @@ class ExternalPaymentEventListener implements ShouldQueue
 
         PaymentEventLog::create([
             'payment_id' => $payment->id,
-            'event'      => $callbackData->newStatus,
-            'payload'    => (array) $callbackData,
+            'event' => $callbackData->newStatus,
+            'payload' => (array) $callbackData,
         ]);
 
         $normalizedInternalEvent = $this->createInternalEvent($callbackData, $payment, $refund);
 
         match ($callbackData->provider) {
-            PaymentProvider::NETS   => $this->netsHandler->handle($normalizedInternalEvent),
+            PaymentProvider::NETS => $this->netsHandler->handle($normalizedInternalEvent),
             PaymentProvider::STRIPE => $this->stripeHandler->handle($normalizedInternalEvent),
-            PaymentProvider::ADYEN  => $this->adyenHandler->handle($normalizedInternalEvent),
+            PaymentProvider::ADYEN => $this->adyenHandler->handle($normalizedInternalEvent),
         };
     }
 

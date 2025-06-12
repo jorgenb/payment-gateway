@@ -18,16 +18,15 @@ class PaymentRefundData extends Data
         public readonly string $payment_id,
         public readonly int $amount_minor,
         public readonly string $currency,
-    ) {
-    }
+    ) {}
 
     public static function rules(): array
     {
         return [
-            'provider'            => ['required', Rule::enum(PaymentProvider::class)],
-            'payment_id'          => 'required|uuid|exists:payments,id',
-            'amount_minor'        => ['required', 'integer', 'min:1', new RefundDoesNotExceedChargedAmount()],
-            'currency'            => 'size:3',
+            'provider' => ['required', Rule::enum(PaymentProvider::class)],
+            'payment_id' => 'required|uuid|exists:payments,id',
+            'amount_minor' => ['required', 'integer', 'min:1', new RefundDoesNotExceedChargedAmount],
+            'currency' => 'size:3',
         ];
     }
 

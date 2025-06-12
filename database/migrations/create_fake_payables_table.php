@@ -6,8 +6,9 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-if ( ! app()->environment('production')) {
-    return new class () extends Migration {
+if (! app()->environment('production')) {
+    return new class extends Migration
+    {
         /**
          * Run the migrations.
          */

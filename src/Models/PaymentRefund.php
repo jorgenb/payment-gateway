@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Models;
 
+use Bilberry\PaymentGateway\Database\Factories\PaymentRefundFactory;
 use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\Exception\RoundingNecessaryException;
 use Brick\Money\Exception\UnknownCurrencyException;
@@ -12,7 +13,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Bilberry\PaymentGateway\Database\Factories\PaymentRefundFactory;
 
 /**
  * @property string $id
@@ -51,7 +51,7 @@ class PaymentRefund extends Model
     ];
 
     protected $casts = [
-        'metadata'            => 'array',
+        'metadata' => 'array',
         'amount_minor' => 'integer',
     ];
 

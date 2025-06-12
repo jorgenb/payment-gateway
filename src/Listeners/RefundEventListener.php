@@ -21,11 +21,11 @@ readonly class RefundEventListener
         private NetsPaymentEventHandler $netsHandler,
         private StripePaymentEventHandler $stripeHandler,
         private AdyenPaymentEventHandler $adyenHandler,
-    ) {
-    }
+    ) {}
 
     /**
      * Handle the event.
+     *
      * @throws Throwable
      */
     public function handle(RefundEvent $event): void
@@ -33,15 +33,15 @@ readonly class RefundEventListener
         // Log the payment event
         PaymentEventLog::create([
             'payment_id' => $event->refund->payment->id,
-            'event'      => $event->newStatus,
-            'payload'    => $event->payload,
+            'event' => $event->newStatus,
+            'payload' => $event->payload,
         ]);
 
         // Handle provider-specific logic
         match ($event->refund->payment->provider) {
-            PaymentProvider::NETS   => $this->netsHandler->handle($event),
+            PaymentProvider::NETS => $this->netsHandler->handle($event),
             PaymentProvider::STRIPE => $this->stripeHandler->handle($event),
-            PaymentProvider::ADYEN  => $this->adyenHandler->handle($event),
+            PaymentProvider::ADYEN => $this->adyenHandler->handle($event),
         };
     }
 }

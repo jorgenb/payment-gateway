@@ -91,27 +91,24 @@ enum PaymentStatus: string
 
     /**
      * Dispatches the event to the appropriate payment event handler.
-     *
-     * @param  PaymentEventHandlerInterface  $handler
-     * @param  PaymentEvent|RefundEvent  $event
      */
     public function handle(PaymentEventHandlerInterface $handler, PaymentEvent|RefundEvent $event): void
     {
         match ($this) {
-            self::CANCELLED        => $handler->handleCancelCreated($event),
-            self::CHARGED          => $handler->handleChargeCreated($event),
-            self::CHARGE_FAILED    => $handler->handleChargeFailed($event),
-            self::FAILED           => $handler->handleFailed($event),
-            self::REFUNDED         => $handler->handleRefundCompleted($event),
+            self::CANCELLED => $handler->handleCancelCreated($event),
+            self::CHARGED => $handler->handleChargeCreated($event),
+            self::CHARGE_FAILED => $handler->handleChargeFailed($event),
+            self::FAILED => $handler->handleFailed($event),
+            self::REFUNDED => $handler->handleRefundCompleted($event),
             self::REFUND_INITIATED => $handler->handleRefundInitiated($event),
-            self::REFUND_FAILED    => $handler->handleRefundFailed($event),
-            self::RESERVED         => $handler->handleReservationCreated($event),
-            self::CREATED          => $handler->handlePaymentCreated($event),
-            self::PENDING          => $handler->handlePending($event),
-            self::REQUIRES_ACTION  => $handler->handleRequiresAction($event),
-            self::PROCESSING       => $handler->handleProcessing($event),
-            self::INITIATED        => $handler->handleInitiated($event),
-            self::UNHANDLED        => $handler->handleUnhandled($event),
+            self::REFUND_FAILED => $handler->handleRefundFailed($event),
+            self::RESERVED => $handler->handleReservationCreated($event),
+            self::CREATED => $handler->handlePaymentCreated($event),
+            self::PENDING => $handler->handlePending($event),
+            self::REQUIRES_ACTION => $handler->handleRequiresAction($event),
+            self::PROCESSING => $handler->handleProcessing($event),
+            self::INITIATED => $handler->handleInitiated($event),
+            self::UNHANDLED => $handler->handleUnhandled($event),
         };
     }
 

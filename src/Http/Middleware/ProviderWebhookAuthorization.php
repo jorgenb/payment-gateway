@@ -6,10 +6,10 @@ namespace Bilberry\PaymentGateway\Http\Middleware;
 
 use Adyen\AdyenException;
 use Adyen\Util\HmacSignature;
+use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Closure;
 use Exception;
 use Illuminate\Http\Request;
-use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Stripe\Webhook;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -22,7 +22,7 @@ class ProviderWebhookAuthorization
     {
         $provider = PaymentProvider::tryFrom($request->route('provider'));
 
-        if ( ! $provider) {
+        if (! $provider) {
             return response()->json(
                 ['error' => 'Invalid payment provider'],
                 Response::HTTP_BAD_REQUEST
@@ -32,12 +32,12 @@ class ProviderWebhookAuthorization
         $secret = config("services.{$provider->value}.webhook_secret");
 
         $isAuthorized = match ($provider) {
-            PaymentProvider::NETS   => $this->authorizeNets($request, $secret),
+            PaymentProvider::NETS => $this->authorizeNets($request, $secret),
             PaymentProvider::STRIPE => $this->authorizeStripe($request, $secret),
-            PaymentProvider::ADYEN  => $this->authorizeAdyen($request, $secret),
+            PaymentProvider::ADYEN => $this->authorizeAdyen($request, $secret),
         };
 
-        if ( ! $isAuthorized) {
+        if (! $isAuthorized) {
             return response()->json(
                 ['error' => 'Unauthorized webhook request'],
                 Response::HTTP_UNAUTHORIZED
@@ -57,7 +57,7 @@ class ProviderWebhookAuthorization
     private function authorizeStripe(Request $request, string $secret): bool
     {
         $signature = $request->header('Stripe-Signature');
-        if ( ! $signature) {
+        if (! $signature) {
             return false;
         }
 
@@ -67,6 +67,7 @@ class ProviderWebhookAuthorization
                 $signature,
                 $secret
             );
+
             return true;
         } catch (Exception) {
             return false;
@@ -78,7 +79,7 @@ class ProviderWebhookAuthorization
      */
     private function authorizeAdyen(Request $request, string $secret): bool
     {
-        $validator = new HmacSignature();
+        $validator = new HmacSignature;
         $notifications = $request->json()->all();
 
         if (isset($notifications['notificationItems'])) {

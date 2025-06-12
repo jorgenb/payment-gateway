@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Database\Factories;
 
-use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Bilberry\PaymentGateway\Enums\PayableType;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
-use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\FakePayable;
+use Bilberry\PaymentGateway\Models\Payment;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class PaymentFactory extends Factory
 {
@@ -21,19 +21,19 @@ class PaymentFactory extends Factory
     public function definition(): array
     {
         return [
-            'payable_id'         => FakePayable::factory(),
-            'payable_type'       => PayableType::FAKE_PAYABLE,
-            'provider'           => PaymentProvider::ADYEN,
-            'type'               => 'one_time',
-            'amount_minor'       => fake()->numberBetween(1000, 1000000),
-            'currency'           => fake()->randomElement(self::CURRENCIES),
-            'status'             => PaymentStatus::PENDING,
-            'external_id'        => null,
+            'payable_id' => FakePayable::factory(),
+            'payable_type' => PayableType::FAKE_PAYABLE,
+            'provider' => PaymentProvider::ADYEN,
+            'type' => 'one_time',
+            'amount_minor' => fake()->numberBetween(1000, 1000000),
+            'currency' => fake()->randomElement(self::CURRENCIES),
+            'status' => PaymentStatus::PENDING,
+            'external_id' => null,
             'external_charge_id' => null,
-            'reference'          => fake()->uuid(),
-            'metadata'           => [],
-            'auto_capture'       => true,
-            'capture_at'         => null,
+            'reference' => fake()->uuid(),
+            'metadata' => [],
+            'auto_capture' => true,
+            'capture_at' => null,
         ];
     }
 

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
-use Bilberry\PaymentGateway\Http\Requests\NetsChargePaymentRequest;
-use Bilberry\PaymentGateway\Http\Requests\NetsCreatePaymentRequest;
-use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Bilberry\PaymentGateway\Data\PaymentCallbackData;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
+use Bilberry\PaymentGateway\Http\Requests\NetsChargePaymentRequest;
+use Bilberry\PaymentGateway\Http\Requests\NetsCreatePaymentRequest;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Providers\NetsPaymentProvider;
+use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
 use Illuminate\Support\Str;
 use Saloon\Http\Faking\MockClient;
 use Saloon\Http\Faking\MockResponse;
@@ -20,7 +20,8 @@ use Saloon\Http\Faking\MockResponse;
 uses(MocksNetsPayments::class);
 
 beforeEach(function (): void {
-    $this->provider = new NetsPaymentProvider();
+    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
+    $this->provider = new NetsPaymentProvider($resolver);
 });
 
 it('initiates and then charges a payment via the Nets provider and records events', function (string $paymentId): void {
@@ -28,7 +29,7 @@ it('initiates and then charges a payment via the Nets provider and records event
 
     MockClient::global([
         NetsCreatePaymentRequest::class => MockResponse::make([
-            'paymentId'            => $paymentId,
+            'paymentId' => $paymentId,
             'hostedPaymentPageUrl' => "https://test.nets.eu/payments/{$paymentId}",
         ], 201),
         NetsChargePaymentRequest::class => MockResponse::make([
@@ -39,8 +40,8 @@ it('initiates and then charges a payment via the Nets provider and records event
     // Create a pending Nets payment with capture_at null to trigger immediate charging.
     $payment = Payment::factory()->nets()->pending()->create([
         'amount_minor' => 10000,
-        'capture_at'   => null,
-        'status'       => PaymentStatus::PENDING,
+        'capture_at' => null,
+        'status' => PaymentStatus::PENDING,
     ]);
 
     // Act: Initiate the payment.
@@ -56,7 +57,7 @@ it('initiates and then charges a payment via the Nets provider and records event
         ->provider->toBe(PaymentProvider::NETS)
         ->amount_minor->toBe(10000)
         ->currency->toBe('NOK')
-        //->external_id->toBe($paymentId)
+        // ->external_id->toBe($paymentId)
         ->and($payment->events)->toHaveCount(1)
         ->sequence(
             fn ($event) => $event->event->toBe(PaymentStatus::INITIATED->value)
@@ -64,11 +65,11 @@ it('initiates and then charges a payment via the Nets provider and records event
 
     // Simulate the reservation callback payload from Nets.
     $reservationCallbackPayload = [
-        'id'        => '924bc362374949dba0dbc11131d88487',
-        'event'     => 'payment.reservation.created',
+        'id' => '924bc362374949dba0dbc11131d88487',
+        'event' => 'payment.reservation.created',
         'timestamp' => '2024-11-06T19:02:21.0787+00:00',
-        'data'      => [
-            'paymentId'   => $paymentId,
+        'data' => [
+            'paymentId' => $paymentId,
             'myReference' => $payment->id,
         ],
     ];
@@ -82,12 +83,12 @@ it('initiates and then charges a payment via the Nets provider and records event
 
     // Simulate the charge callback payload from Nets.
     $chargeCallbackPayload = [
-        'id'        => 'fe51ffdf8732479fa4cd90cc8c13b86c',
-        'event'     => 'payment.charge.created',
+        'id' => 'fe51ffdf8732479fa4cd90cc8c13b86c',
+        'event' => 'payment.charge.created',
         'timestamp' => '2024-11-06T19:02:21.0781+00:00',
-        'data'      => [
-            'charge_id'   => '55a8e4e3d0394353b7b51a9137c6e720',
-            'paymentId'   => $paymentId,
+        'data' => [
+            'charge_id' => '55a8e4e3d0394353b7b51a9137c6e720',
+            'paymentId' => $paymentId,
             'myReference' => $payment->id,
         ],
     ];
@@ -119,7 +120,7 @@ it('does not charge a payment when capture_at is set', function (string $payment
     // Create a pending Nets payment with capture_at set (i.e. scheduled for later capture).
     $payment = Payment::factory()->nets()->pending()->create([
         'amount_minor' => 10000,
-        'capture_at'   => now()->addDay(), // capture_at is set
+        'capture_at' => now()->addDay(), // capture_at is set
     ]);
 
     // Act: Initiate the payment.
@@ -136,11 +137,11 @@ it('does not charge a payment when capture_at is set', function (string $payment
 
     // Simulate the reservation callback payload from Nets.
     $reservationCallbackPayload = [
-        'id'        => '924bc362374949dba0dbc11131d88487',
-        'event'     => 'payment.reservation.created',
+        'id' => '924bc362374949dba0dbc11131d88487',
+        'event' => 'payment.reservation.created',
         'timestamp' => '2024-11-06T19:02:21.0787+00:00',
-        'data'      => [
-            'paymentId'   => $paymentId,
+        'data' => [
+            'paymentId' => $paymentId,
             'myReference' => $payment->id,
         ],
     ];

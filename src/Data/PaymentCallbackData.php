@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Data;
 
+use Bilberry\PaymentGateway\Enums\PaymentProvider;
+use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\Exception\RoundingNecessaryException;
 use Brick\Money\Exception\UnknownCurrencyException;
 use Brick\Money\Money;
 use Illuminate\Http\Request;
-use Bilberry\PaymentGateway\Enums\PaymentProvider;
-use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Spatie\LaravelData\Attributes\FromRouteParameter;
-use Spatie\LaravelData\Attributes\WithCast;
-use Spatie\LaravelData\Casts\EnumCast;
 use Spatie\LaravelData\Data;
 
 class PaymentCallbackData extends Data
@@ -21,12 +19,12 @@ class PaymentCallbackData extends Data
     /**
      * DTO representing callback data from a payment provider.
      *
-     * @param PaymentProvider $provider The payment provider used for the transaction.
-     * @param array $rawPayload The raw JSON payload received from the payment provider.
-     * @param string|null $merchantReference Identifier for the payment in our system.
+     * @param  PaymentProvider  $provider  The payment provider used for the transaction.
+     * @param  array  $rawPayload  The raw JSON payload received from the payment provider.
+     * @param  string|null  $merchantReference  Identifier for the payment in our system.
      * @param  string|null  $externalId  Identifier for the payment (or refund) in the provider's system.
      * @param  string|null  $eventType  Event type mapped to internal status.
-     * @param Money|null $amount The amount of money involved in the transaction.
+     * @param  Money|null  $amount  The amount of money involved in the transaction.
      */
     public function __construct(
         #[FromRouteParameter('provider')]
@@ -38,8 +36,7 @@ class PaymentCallbackData extends Data
         public readonly ?Money $amount = null,
         public readonly ?PaymentStatus $newStatus = null,
         public readonly ?string $externalChargeId = null,
-    ) {
-    }
+    ) {}
 
     public function hasMerchantReference(): bool
     {
@@ -54,9 +51,9 @@ class PaymentCallbackData extends Data
     public function isEventSupported(): bool
     {
         return match ($this->provider) {
-            PaymentProvider::NETS   => PaymentStatus::UNHANDLED !== PaymentStatus::fromNetsEvent($this->eventType ?? ''),
-            PaymentProvider::STRIPE => PaymentStatus::UNHANDLED !== PaymentStatus::fromStripeEvent($this->eventType ?? ''),
-            PaymentProvider::ADYEN  => PaymentStatus::UNHANDLED !== PaymentStatus::fromAdyenEvent($this->eventType ?? ''),
+            PaymentProvider::NETS => PaymentStatus::fromNetsEvent($this->eventType ?? '') !== PaymentStatus::UNHANDLED,
+            PaymentProvider::STRIPE => PaymentStatus::fromStripeEvent($this->eventType ?? '') !== PaymentStatus::UNHANDLED,
+            PaymentProvider::ADYEN => PaymentStatus::fromAdyenEvent($this->eventType ?? '') !== PaymentStatus::UNHANDLED,
         };
     }
 
@@ -72,7 +69,6 @@ class PaymentCallbackData extends Data
 
         return self::build($payload, $provider);
     }
-
 
     /**
      * @throws UnknownCurrencyException

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Illuminate\Testing\Fluent\AssertableJson;
 use Bilberry\PaymentGateway\Models\Payment;
+use Illuminate\Testing\Fluent\AssertableJson;
 
 use function Pest\Laravel\get;
 
@@ -24,7 +24,7 @@ it('shows a payment', function (): void {
                 'total_charged_amount',
                 'total_refunded_amount',
                 'total_pending_refunded_amount',
-                'refunds'
+                'refunds',
             ])
                 ->has('refunds', 2)
                 ->etc()

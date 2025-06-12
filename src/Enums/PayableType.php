@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Enums;
 
-use Modules\Invoices\Models\Invoice;
 use Bilberry\PaymentGateway\Models\FakePayable;
-use InvalidArgumentException;
 use Illuminate\Support\Facades\App;
+use InvalidArgumentException;
+use Modules\Invoices\Models\Invoice;
 
 enum PayableType: string
 {
@@ -33,16 +33,13 @@ enum PayableType: string
      * For example, 'invoice' will return 'Modules\Invoices\Models\Invoice' as the enum value.
      *
      * There is no native way to get the class name from the string backed enum case.
-     *
-     * @param  string  $name
-     * @return PayableType
      */
     public static function tryFromName(string $name): self
     {
         $normalized = mb_strtolower($name);
 
         foreach (self::cases() as $case) {
-            if (App::environment('production') && self::FAKE_PAYABLE === $case) {
+            if (App::environment('production') && $case === self::FAKE_PAYABLE) {
                 continue;
             }
 

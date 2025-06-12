@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
-use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Bilberry\PaymentGateway\Data\PaymentCallbackData;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Bilberry\PaymentGateway\Providers\NetsPaymentProvider;
+use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class, MocksNetsPayments::class);
 
 beforeEach(function (): void {
-    $this->provider = new NetsPaymentProvider();
+    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
+    $this->provider = new NetsPaymentProvider($resolver);
 });
 
 it('handles refund failure gracefully', function (array $callbackData): void {
@@ -44,25 +46,25 @@ it('returns error response when refund amount exceeds total charged amount', fun
 
     // Simulate existing refunded amount.
     PaymentRefund::factory()->create([
-        'payment_id'          => $payment->id,
+        'payment_id' => $payment->id,
         'amount_minor' => 800,
-        'status'              => PaymentStatus::REFUNDED->value,
+        'status' => PaymentStatus::REFUNDED->value,
     ]);
 
     // Simulate a pending refund attempt that exceeds the charged amount.
     $pendingRefund = PaymentRefund::factory()->make([
-        'payment_id'          => $payment->id,
+        'payment_id' => $payment->id,
         'amount_minor' => 300,
-        'status'              => PaymentStatus::PENDING,
+        'status' => PaymentStatus::PENDING,
     ]);
 
     $response = $this
         ->withoutMiddleware()
         ->postJson(route('api.refunds.store', $payment), [
-            'provider'            => PaymentProvider::NETS->value,
-            'payment_id'          => $payment->id,
-            'amount_minor'          => $pendingRefund->amount_minor,
-            'currency'            => $payment->currency,
+            'provider' => PaymentProvider::NETS->value,
+            'payment_id' => $payment->id,
+            'amount_minor' => $pendingRefund->amount_minor,
+            'currency' => $payment->currency,
         ]);
 
     $response->assertUnprocessable()
@@ -72,10 +74,9 @@ it('returns error response when refund amount exceeds total charged amount', fun
 it('processes a completed refund callback', function (array $callbackData): void {
     $refundCallbackData = PaymentCallbackData::fromArray($callbackData, PaymentProvider::NETS);
 
-
     $refund = PaymentRefund::factory()->create([
         'external_refund_id' => $refundCallbackData->externalId,
-        'status'             => PaymentStatus::PROCESSING,
+        'status' => PaymentStatus::PROCESSING,
     ]);
 
     $this->provider->handleCallback($refundCallbackData);

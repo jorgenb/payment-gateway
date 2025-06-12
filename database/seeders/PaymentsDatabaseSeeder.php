@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 use Illuminate\Database\Seeder;
 
 class PaymentsDatabaseSeeder extends Seeder

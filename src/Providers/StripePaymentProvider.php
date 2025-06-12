@@ -6,7 +6,9 @@ namespace Bilberry\PaymentGateway\Providers;
 
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
+use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Stripe\Exception\ApiErrorException;
@@ -16,26 +18,28 @@ use Throwable;
 class StripePaymentProvider extends BasePaymentProvider
 {
     public function __construct(
-        private readonly StripeClient $client,
-    ) {
-    }
+        private readonly PaymentProviderConfigResolverInterface $configResolver,
+    ) {}
 
     /**
      * Initiates a payment with the specified provider.
      *
-     * @param  Payment  $payment
      * @return PaymentResponse The response containing the payment details.
+     *
      * @throws ApiErrorException
      */
     public function initiate(Payment $payment): PaymentResponse
     {
+        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
+        $client = new StripeClient($config->apiKey);
+
         $this->ensureStatus($payment, PaymentStatus::PENDING);
         $captureMethod = $payment->capture_at
             ? 'manual'
             : ($payment->auto_capture ?? true ? 'automatic' : 'manual');
 
-        $intentResponse = $this->client->paymentIntents->create([
-            'amount'   => $payment->amount_minor,
+        $intentResponse = $client->paymentIntents->create([
+            'amount' => $payment->amount_minor,
             'currency' => $payment->currency,
             'metadata' => [
                 'merchantReference' => $payment->id,
@@ -72,16 +76,19 @@ class StripePaymentProvider extends BasePaymentProvider
      * This method captures the specified amount from a reserved payment.
      * It should support idempotency to prevent duplicate charges.
      *
-     * @param  Payment  $payment
      * @return PaymentResponse The response containing the charge status and details.
+     *
      * @throws Throwable
      */
     public function charge(Payment $payment): PaymentResponse
     {
+        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
+        $client = new StripeClient($config->apiKey);
+
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
 
         try {
-            $response = $this->client->paymentIntents->capture(
+            $response = $client->paymentIntents->capture(
                 $payment->external_id,
                 [],
                 ['idempotency_key' => $payment->id]
@@ -97,7 +104,7 @@ class StripePaymentProvider extends BasePaymentProvider
         }
 
         $payment->update([
-            'external_charge_id' => $response->latest_charge
+            'external_charge_id' => $response->latest_charge,
         ]);
 
         $this->recordPaymentEvent(
@@ -120,22 +127,24 @@ class StripePaymentProvider extends BasePaymentProvider
      *
      * This can be a full or partial refund depending on provider support.
      *
-     * @param  PaymentRefund  $refund
-     * @throws Throwable
      * @return RefundResponse The response containing the refund status.
      *
+     * @throws Throwable
      */
     public function refund(PaymentRefund $refund): RefundResponse
     {
+        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
+        $client = new StripeClient($config->apiKey);
+
         $this->ensureStatus($refund->payment, PaymentStatus::CHARGED);
 
         try {
-            $refundResponse = $this->client->refunds->create([
+            $refundResponse = $client->refunds->create([
                 'payment_intent' => $refund->payment->external_id,
-                'amount'         => $refund->amount_minor,
-                'metadata'       => [
-                    'refund_id'   => $refund->id,
-                    'payment_id'  => $refund->payment->id,
+                'amount' => $refund->amount_minor,
+                'metadata' => [
+                    'refund_id' => $refund->id,
+                    'payment_id' => $refund->payment->id,
                     'external_id' => $refund->payment->external_id,
                 ],
             ], [
@@ -154,7 +163,7 @@ class StripePaymentProvider extends BasePaymentProvider
 
         $refund->update([
             'external_refund_id' => $refundResponse->id,
-            'status'             => $status
+            'status' => $status,
         ]);
 
         $this->recordRefundEvent(
@@ -175,16 +184,19 @@ class StripePaymentProvider extends BasePaymentProvider
      *
      * Some providers only allow full cancellation.
      *
-     * @param  Payment  $payment
-     * @throws Throwable
      * @return PaymentResponse The response containing the cancel status.
+     *
+     * @throws Throwable
      */
     public function cancel(Payment $payment): PaymentResponse
     {
+        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
+        $client = new StripeClient($config->apiKey);
+
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
 
         try {
-            $cancellationResponse = $this->client->paymentIntents->cancel(
+            $cancellationResponse = $client->paymentIntents->cancel(
                 $payment->external_id,
                 [],
                 ['idempotency_key' => $payment->id]

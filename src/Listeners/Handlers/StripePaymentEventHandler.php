@@ -9,9 +9,7 @@ use Bilberry\PaymentGateway\Providers\StripePaymentProvider;
 
 readonly class StripePaymentEventHandler extends AbstractPaymentEventHandler
 {
-    public function __construct(private StripePaymentProvider $stripePaymentProvider)
-    {
-    }
+    public function __construct(private StripePaymentProvider $stripePaymentProvider) {}
 
     protected function resolvePaymentProvider(): PaymentProviderInterface
     {

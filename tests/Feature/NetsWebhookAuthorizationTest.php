@@ -18,11 +18,11 @@ beforeEach(function (): void {
     config(['services.nets.webhook_secret' => $this->webhookSecret]);
 
     $this->validPayload = [
-        'id'         => $this->externalId,
-        'event'      => 'payment.checkout.completed',
-        'timestamp'  => '2024-11-06T19:02:21.0750+00:00',
+        'id' => $this->externalId,
+        'event' => 'payment.checkout.completed',
+        'timestamp' => '2024-11-06T19:02:21.0750+00:00',
         'merchantId' => 100242833,
-        'data'       => [
+        'data' => [
             'order' => [
                 'amount' => ['amount' => '10000', 'currency' => 'NOK'],
             ],

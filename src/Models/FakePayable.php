@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Models;
 
+use Bilberry\PaymentGateway\Database\Factories\FakePayableFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Bilberry\PaymentGateway\Database\Factories\FakePayableFactory;
 
 /**
  * Class used as a placeholder model to satisfy polymorphic relationships
@@ -21,6 +21,7 @@ class FakePayable extends Model
 {
     use HasFactory;
     use HasUuids;
+
     protected static function newFactory(): FakePayableFactory
     {
         return FakePayableFactory::new();

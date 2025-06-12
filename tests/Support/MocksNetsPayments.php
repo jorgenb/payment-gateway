@@ -6,8 +6,8 @@ namespace Bilberry\PaymentGateway\Tests\Support;
 
 use Bilberry\PaymentGateway\Http\Requests\NetsChargePaymentRequest;
 use Bilberry\PaymentGateway\Http\Requests\NetsCreatePaymentRequest;
-use Saloon\Http\Faking\MockResponse;
 use Saloon\Http\Faking\MockClient;
+use Saloon\Http\Faking\MockResponse;
 
 trait MocksNetsPayments
 {
@@ -15,7 +15,7 @@ trait MocksNetsPayments
     {
         MockClient::global([
             NetsCreatePaymentRequest::class => MockResponse::make([
-                'paymentId'            => $paymentId,
+                'paymentId' => $paymentId,
                 'hostedPaymentPageUrl' => "https://test.nets.eu/payments/{$paymentId}",
             ], 201),
         ]);
@@ -45,7 +45,7 @@ trait MocksNetsPayments
             NetsCreatePaymentRequest::class => MockResponse::make([
                 'errors' => [
                     'property1' => 'error1',
-                    'property2' => 'error2'
+                    'property2' => 'error2',
                 ],
             ], 400),
         ]);
@@ -56,8 +56,8 @@ trait MocksNetsPayments
         MockClient::global([
             NetsCreatePaymentRequest::class => MockResponse::make([
                 'message' => 'Server Error',
-                'code'    => '500',
-                'source'  => 'internal',
+                'code' => '500',
+                'source' => 'internal',
             ], 500),
         ]);
     }

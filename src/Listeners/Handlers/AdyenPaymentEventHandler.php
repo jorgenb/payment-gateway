@@ -9,9 +9,7 @@ use Bilberry\PaymentGateway\Providers\AdyenPaymentProvider;
 
 readonly class AdyenPaymentEventHandler extends AbstractPaymentEventHandler
 {
-    public function __construct(private AdyenPaymentProvider $adyenPaymentProvider)
-    {
-    }
+    public function __construct(private AdyenPaymentProvider $adyenPaymentProvider) {}
 
     protected function resolvePaymentProvider(): PaymentProviderInterface
     {

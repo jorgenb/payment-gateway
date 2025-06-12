@@ -13,15 +13,13 @@ use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Services\PaymentGateway;
-use Illuminate\Http\Request;
 use Throwable;
 
-class PaymentsApiController extends Controller
+class PaymentsController extends Controller
 {
     public function __construct(
         private readonly ?PaymentProviderInterface $provider = null
-    ) {
-    }
+    ) {}
 
     /**
      * Initiates a payment using a specified provider.
@@ -40,24 +38,21 @@ class PaymentsApiController extends Controller
      *  - If `capture_at` is provided, auto-capture is disabled and the payment will NOT be captured automatically.
      *  - In this case, it is the responsibility of the API consumer to call the `charge` endpoint manually at the appropriate time.
      *  - If `capture_at` is not provided and `auto_capture` is true (default), the system will attempt to capture automatically (depending on provider behavior).
-     *
-     * @param  Request  $request
-     * @return PaymentResponse
      */
-    public function store(Request $request): PaymentResponse
+    public function store(PaymentRequestData $data): PaymentResponse
     {
-        $data = PaymentRequestData::from($request->all());
         try {
             $payment = Payment::create([
-                'payable_id'   => $data->payable_id,
+                'payable_id' => $data->payable_id,
                 'payable_type' => $data->payable_type,
                 'amount_minor' => $data->amount_minor,
-                'currency'     => $data->currency,
-                'provider'     => $data->provider,
-                'status'       => PaymentStatus::PENDING,
-                'capture_at'   => $data->capture_at,
+                'currency' => $data->currency,
+                'provider' => $data->provider,
+                'status' => PaymentStatus::PENDING,
+                'capture_at' => $data->capture_at,
                 'auto_capture' => $data->auto_capture,
             ]);
+
             return $this->provider->initiate($payment);
         } catch (Throwable $exception) {
             report($exception);
@@ -67,15 +62,13 @@ class PaymentsApiController extends Controller
 
     /**
      * Cancels a reserved payment before it is charged.
-     *
-     * @param  PaymentCancelData  $request
-     * @return PaymentResponse
      */
     public function cancel(PaymentCancelData $request): PaymentResponse
     {
         try {
             $providerInstance = PaymentGateway::getProvider($request->provider);
             $payment = Payment::findOrFail($request->paymentId);
+
             return $providerInstance->cancel($payment);
         } catch (Throwable $exception) {
             report($exception);
@@ -85,15 +78,13 @@ class PaymentsApiController extends Controller
 
     /**
      * Charges a previously reserved payment.
-     *
-     * @param  PaymentChargeData  $request
-     * @return PaymentResponse
      */
     public function charge(PaymentChargeData $request): PaymentResponse
     {
         try {
             $providerInstance = PaymentGateway::getProvider($request->provider);
             $payment = Payment::findOrFail($request->paymentId);
+
             return $providerInstance->charge($payment);
         } catch (Throwable $exception) {
             report($exception);
@@ -103,13 +94,11 @@ class PaymentsApiController extends Controller
 
     /**
      * Display the specified payment resource.
-     *
-     * @param  string $id
-     * @return ShowPaymentResourceData
      */
     public function show(string $id): ShowPaymentResourceData
     {
         $payment = Payment::findOrFail($id);
+
         return ShowPaymentResourceData::from($payment);
     }
 }

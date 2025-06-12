@@ -19,9 +19,9 @@ class PaymentGateway
     public static function getProvider(PaymentProvider $provider): NetsPaymentProvider|StripePaymentProvider|AdyenPaymentProvider
     {
         return match ($provider) {
-            PaymentProvider::NETS   => app(NetsPaymentProvider::class),
+            PaymentProvider::NETS => app(NetsPaymentProvider::class),
             PaymentProvider::STRIPE => app(StripePaymentProvider::class),
-            PaymentProvider::ADYEN  => app(AdyenPaymentProvider::class),
+            PaymentProvider::ADYEN => app(AdyenPaymentProvider::class),
         };
     }
 }

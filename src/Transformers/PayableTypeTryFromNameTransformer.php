@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Bilberry\PaymentGateway\Transformers;
 
 use Bilberry\PaymentGateway\Enums\PayableType;
+use InvalidArgumentException;
 use Spatie\LaravelData\Casts\Cast;
 use Spatie\LaravelData\Support\Creation\CreationContext;
 use Spatie\LaravelData\Support\DataProperty;
 use Spatie\LaravelData\Support\Transformation\TransformationContext;
 use Spatie\LaravelData\Transformers\Transformer;
-use InvalidArgumentException;
 
 class PayableTypeTryFromNameTransformer implements Cast, Transformer
 {

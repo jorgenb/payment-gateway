@@ -2,10 +2,13 @@
 
 namespace Bilberry\PaymentGateway\Tests;
 
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
+use Bilberry\PaymentGateway\Enums\PaymentProvider;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
+use Bilberry\PaymentGateway\PaymentGatewayServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\File;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Bilberry\PaymentGateway\PaymentGatewayServiceProvider;
 use Spatie\LaravelData\LaravelDataServiceProvider;
 
 class TestCase extends Orchestra
@@ -23,19 +26,31 @@ class TestCase extends Orchestra
     {
         return [
             PaymentGatewayServiceProvider::class,
-            LaravelDataServiceProvider::class
+            LaravelDataServiceProvider::class,
         ];
     }
 
     public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
+        config()->set('payment-gateway.nets.base_url', 'https://api.example.com');
 
-        config()->set('services.stripe.secret', 'sk_test_4eC39HqLyjWDarjtT1zdp7dc');
-        config()->set('services.adyen.api_key', 'test_AdyenApiKey');
-        config()->set('services.nets.secret', 'test_NetsSecret');
-        config()->set('services.nets.base_url', 'https://api.example.com');
-
+        $app->singleton(PaymentProviderConfigResolverInterface::class, function () {
+            return new class implements PaymentProviderConfigResolverInterface
+            {
+                public function resolve(PaymentProvider $provider, mixed $context = null): PaymentProviderConfig
+                {
+                    return new PaymentProviderConfig(
+                        apiKey: 'test_api_key',
+                        environment: 'test',
+                        merchantAccount: 'TestMerchant',
+                        termsUrl: null,
+                        redirectUrl: 'https://example.com/return',
+                        webhookSigningSecret: null,
+                    );
+                }
+            };
+        });
 
         foreach (File::allFiles(__DIR__.'/../database/migrations') as $migration) {
             (include $migration->getRealPath())->up();

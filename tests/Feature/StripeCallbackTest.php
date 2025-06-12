@@ -26,7 +26,7 @@ it('handles stripe callback events', function (array $data): void {
 
     $response = $this->postJson(
         route('api.payments.callback', [
-            'provider' => PaymentProvider::STRIPE->value
+            'provider' => PaymentProvider::STRIPE->value,
         ]),
         $data
     );

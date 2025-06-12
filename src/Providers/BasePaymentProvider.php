@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Providers;
 
-use Brick\Math\Exception\NumberFormatException;
-use Brick\Math\Exception\RoundingNecessaryException;
-use Brick\Money\Exception\UnknownCurrencyException;
-use InvalidArgumentException;
 use Bilberry\PaymentGateway\Data\PaymentCallbackData;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Events\ExternalPaymentEvent;
@@ -16,6 +12,10 @@ use Bilberry\PaymentGateway\Events\RefundEvent;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
+use Brick\Math\Exception\NumberFormatException;
+use Brick\Math\Exception\RoundingNecessaryException;
+use Brick\Money\Exception\UnknownCurrencyException;
+use InvalidArgumentException;
 
 abstract class BasePaymentProvider implements PaymentProviderInterface
 {
@@ -24,21 +24,17 @@ abstract class BasePaymentProvider implements PaymentProviderInterface
      *
      * Payment providers send multiple callbacks during a payment lifecycle.
      * This method should handle and map different events appropriately.
-     *
-     * @param  PaymentCallbackData  $data
-     * @return void
      */
     public function handleCallback(PaymentCallbackData $data): void
     {
         $this->recordExternalEvent($data);
     }
+
     /**
      * Dispatches an external payment event for a given provider.
      *
      * This method is typically triggered by webhooks/callbacks sent from the payment provider
      * and is used to map external status updates to internal events in the system.
-     *
-     * @param  PaymentCallbackData  $data
      */
     public function recordExternalEvent(
         PaymentCallbackData $data
@@ -52,7 +48,7 @@ abstract class BasePaymentProvider implements PaymentProviderInterface
      * @param  Payment  $payment  The payment model instance
      * @param  PaymentStatus  $newStatus  New payment status
      * @param  array  $payload  Additional event data
-     * @param  PaymentCallbackData|null  $callbackData
+     *
      * @throws NumberFormatException
      * @throws RoundingNecessaryException
      * @throws UnknownCurrencyException
@@ -78,7 +74,7 @@ abstract class BasePaymentProvider implements PaymentProviderInterface
      * @param  PaymentRefund  $refund  The refund model instance
      * @param  PaymentStatus  $newStatus  New refund status
      * @param  array  $payload  Additional event data
-     * @param  PaymentCallbackData|null  $callbackData
+     *
      * @throws NumberFormatException
      * @throws RoundingNecessaryException
      * @throws UnknownCurrencyException
@@ -98,16 +94,14 @@ abstract class BasePaymentProvider implements PaymentProviderInterface
         );
     }
 
-
-
     /**
      * Ensures that the payment is in the expected status before proceeding.
      *
      * This method acts as a guard clause to prevent operations from being performed on payments
      * that are not in the required state (e.g., refunding a payment that has not been charged).
      *
-     * @param Payment $payment The payment instance to check
-     * @param PaymentStatus $expected The expected status required for the operation
+     * @param  Payment  $payment  The payment instance to check
+     * @param  PaymentStatus  $expected  The expected status required for the operation
      *
      * @throws InvalidArgumentException If the payment is not in the expected status
      */

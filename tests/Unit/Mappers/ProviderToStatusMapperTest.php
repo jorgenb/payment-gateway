@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
+use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Tests\Unit\Mappers\FakeProviderEventMapper;
 use Illuminate\Support\Facades\Log;
-use Bilberry\PaymentGateway\Enums\PaymentStatus;
-
 
 beforeEach(function (): void {
     /** @phpstan-ignore-next-line */

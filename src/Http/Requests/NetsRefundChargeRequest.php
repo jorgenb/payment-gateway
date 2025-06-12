@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Http\Requests;
 
-use JsonException;
 use Bilberry\PaymentGateway\Data\NetsPaymentRefundResponseData;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
+use JsonException;
 use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
@@ -21,8 +21,7 @@ class NetsRefundChargeRequest extends Request implements HasBody
 
     public function __construct(
         protected readonly PaymentRefund $refund,
-    ) {
-    }
+    ) {}
 
     /**
      * Resolve the endpoint for refunding a payment.
@@ -52,18 +51,18 @@ class NetsRefundChargeRequest extends Request implements HasBody
     {
         return [
             'myReference' => $this->refund->payment_id,
-            'amount'      => $this->refund->amount_minor,
-            'orderItems'  => [
+            'amount' => $this->refund->amount_minor,
+            'orderItems' => [
                 [
-                    'reference'        => $this->refund->payment_id,
-                    'name'             => 'Refund',
-                    'quantity'         => 1,
-                    'unit'             => 'pcs',
-                    'unitPrice'        => $this->refund->amount_minor,
-                    'taxRate'          => 0,
-                    'taxAmount'        => 0,
+                    'reference' => $this->refund->payment_id,
+                    'name' => 'Refund',
+                    'quantity' => 1,
+                    'unit' => 'pcs',
+                    'unitPrice' => $this->refund->amount_minor,
+                    'taxRate' => 0,
+                    'taxAmount' => 0,
                     'grossTotalAmount' => $this->refund->amount_minor,
-                    'netTotalAmount'   => $this->refund->amount_minor,
+                    'netTotalAmount' => $this->refund->amount_minor,
                 ],
             ],
         ];

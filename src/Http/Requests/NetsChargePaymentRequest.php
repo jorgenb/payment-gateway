@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Http\Requests;
 
-use JsonException;
 use Bilberry\PaymentGateway\Data\NetsPaymentChargeResponseData;
 use Bilberry\PaymentGateway\Models\Payment;
+use JsonException;
 use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
@@ -19,9 +19,7 @@ class NetsChargePaymentRequest extends Request implements HasBody
 
     protected Method $method = Method::POST;
 
-    public function __construct(protected readonly Payment $payment)
-    {
-    }
+    public function __construct(protected readonly Payment $payment) {}
 
     /**
      * Resolve the endpoint for charging a payment.
@@ -50,8 +48,8 @@ class NetsChargePaymentRequest extends Request implements HasBody
     public function defaultBody(): array
     {
         return [
-            'amount'      => $this->payment->amount_minor,
-            'orderItems'  => [],
+            'amount' => $this->payment->amount_minor,
+            'orderItems' => [],
             'myReference' => $this->payment->id,
         ];
     }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Database\Factories;
 
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Bilberry\PaymentGateway\Models\FakePayable;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class FakePayableFactory extends Factory
 {
@@ -17,5 +17,4 @@ class FakePayableFactory extends Factory
             'id' => $this->faker->uuid,
         ];
     }
-
 }
