@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Providers;
 
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
-use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
-use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
+use Brick\Math\Exception\NumberFormatException;
+use Brick\Math\Exception\RoundingNecessaryException;
+use Brick\Money\Exception\UnknownCurrencyException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\StripeClient;
 use Throwable;
 
 class StripePaymentProvider extends BasePaymentProvider
 {
-    public function __construct(
-        private readonly PaymentProviderConfigResolverInterface $configResolver,
-    ) {}
-
     /**
      * Initiates a payment with the specified provider.
      *
@@ -28,12 +26,12 @@ class StripePaymentProvider extends BasePaymentProvider
      *
      * @throws ApiErrorException
      */
-    public function initiate(Payment $payment): PaymentResponse
+    public function initiate(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
-        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
         $client = new StripeClient($config->apiKey);
 
         $this->ensureStatus($payment, PaymentStatus::PENDING);
+
         $captureMethod = $payment->capture_at
             ? 'manual'
             : ($payment->auto_capture ?? true ? 'automatic' : 'manual');
@@ -52,18 +50,19 @@ class StripePaymentProvider extends BasePaymentProvider
             'idempotency_key' => $payment->id,
         ]);
 
+        $status = PaymentStatus::INITIATED;
         $payment->update([
+            'status' => $status,
             'external_id' => $intentResponse->id,
         ]);
 
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: PaymentStatus::INITIATED,
-            payload: $intentResponse->toArray()
-        );
+            status: $status,
+            payload: $intentResponse->toArray());
 
         return new PaymentResponse(
-            status: PaymentStatus::INITIATED,
+            status: $status,
             payment: $payment,
             responseData: $intentResponse->toArray(),
             metadata: ['clientSecret' => $intentResponse->client_secret]
@@ -78,11 +77,14 @@ class StripePaymentProvider extends BasePaymentProvider
      *
      * @return PaymentResponse The response containing the charge status and details.
      *
+     * @throws ApiErrorException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function charge(Payment $payment): PaymentResponse
+    public function charge(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
-        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
         $client = new StripeClient($config->apiKey);
 
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
@@ -94,22 +96,27 @@ class StripePaymentProvider extends BasePaymentProvider
                 ['idempotency_key' => $payment->id]
             );
         } catch (Throwable $e) {
+            $status = PaymentStatus::FAILED;
+            $payment->update([
+                'status' => $status,
+            ]);
             $this->recordPaymentEvent(
                 payment: $payment,
-                newStatus: PaymentStatus::FAILED,
+                status: $status,
                 payload: ['error' => $e->getMessage()]
             );
 
             throw $e;
         }
 
+        $status = PaymentStatus::PROCESSING;
         $payment->update([
             'external_charge_id' => $response->latest_charge,
         ]);
 
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: PaymentStatus::PROCESSING,
+            status: $status,
             payload: $response->toArray()
         );
 
@@ -129,11 +136,14 @@ class StripePaymentProvider extends BasePaymentProvider
      *
      * @return RefundResponse The response containing the refund status.
      *
+     * @throws ApiErrorException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function refund(PaymentRefund $refund): RefundResponse
+    public function refund(PaymentRefund $refund, PaymentProviderConfig $config): RefundResponse
     {
-        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
         $client = new StripeClient($config->apiKey);
 
         $this->ensureStatus($refund->payment, PaymentStatus::CHARGED);
@@ -151,11 +161,18 @@ class StripePaymentProvider extends BasePaymentProvider
                 'idempotency_key' => $refund->id,
             ]);
         } catch (Throwable $e) {
+
+            $status = PaymentStatus::FAILED;
+            $refund->update([
+                'status' => $status,
+            ]);
+
             $this->recordRefundEvent(
                 refund: $refund,
-                newStatus: PaymentStatus::FAILED,
+                status: $status,
                 payload: ['error' => $e->getMessage()],
             );
+
             throw $e;
         }
 
@@ -168,7 +185,7 @@ class StripePaymentProvider extends BasePaymentProvider
 
         $this->recordRefundEvent(
             refund: $refund,
-            newStatus: $status,
+            status: $status,
             payload: $refundResponse->toArray(),
         );
 
@@ -186,11 +203,14 @@ class StripePaymentProvider extends BasePaymentProvider
      *
      * @return PaymentResponse The response containing the cancel status.
      *
+     * @throws ApiErrorException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function cancel(Payment $payment): PaymentResponse
+    public function cancel(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
-        $config = $this->configResolver->resolve(PaymentProvider::STRIPE);
         $client = new StripeClient($config->apiKey);
 
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
@@ -202,17 +222,25 @@ class StripePaymentProvider extends BasePaymentProvider
                 ['idempotency_key' => $payment->id]
             );
         } catch (Throwable $e) {
+
+            $status = PaymentStatus::FAILED;
+
             $this->recordPaymentEvent(
                 payment: $payment,
-                newStatus: PaymentStatus::FAILED,
+                status: $status,
                 payload: ['error' => $e->getMessage()]
             );
             throw $e;
         }
 
+        $status = PaymentStatus::PROCESSING;
+        $payment->update([
+            'external_id' => $cancellationResponse->id,
+        ]);
+
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: PaymentStatus::PROCESSING,
+            status: $status,
             payload: $cancellationResponse->toArray()
         );
 

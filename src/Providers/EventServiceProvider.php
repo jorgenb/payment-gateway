@@ -20,12 +20,12 @@ class EventServiceProvider extends ServiceProvider
      * @var array<string, array<int, string>>
      */
     protected $listen = [
-        PaymentEvent::class => [
-            PaymentEventListener::class,
-        ],
-        RefundEvent::class => [
-            RefundEventListener::class,
-        ],
+        //        PaymentEvent::class => [
+        //            PaymentEventListener::class,
+        //        ],
+        //        RefundEvent::class => [
+        //            RefundEventListener::class,
+        //        ],
         ExternalPaymentEvent::class => [
             ExternalPaymentEventListener::class,
         ],

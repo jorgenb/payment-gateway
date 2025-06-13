@@ -10,12 +10,12 @@ use Adyen\Model\Checkout\CreateCheckoutSessionRequest;
 use Adyen\Model\Checkout\PaymentCaptureRequest;
 use Adyen\Model\Checkout\PaymentRefundRequest;
 use Adyen\Model\Checkout\StandalonePaymentCancelRequest;
+use Adyen\Service\Checkout\ModificationsApi;
 use Adyen\Service\Checkout\PaymentsApi;
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
-use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
-use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Brick\Math\Exception\NumberFormatException;
@@ -26,10 +26,6 @@ use Throwable;
 
 class AdyenPaymentProvider extends BasePaymentProvider
 {
-    public function __construct(
-        private readonly PaymentProviderConfigResolverInterface $configResolver,
-    ) {}
-
     /**
      * @throws AdyenException
      */
@@ -48,16 +44,12 @@ class AdyenPaymentProvider extends BasePaymentProvider
      * @return PaymentResponse The response containing the payment details.
      *
      * @throws AdyenException
-     * @throws NumberFormatException
-     * @throws RoundingNecessaryException
-     * @throws UnknownCurrencyException
      */
-    public function initiate(Payment $payment): PaymentResponse
+    public function initiate(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::PENDING);
 
-        $adyenConfig = $this->configResolver->resolve(PaymentProvider::ADYEN);
-        $client = $this->makeAdyenClient($adyenConfig->apiKey, $adyenConfig->environment ?? 'test');
+        $client = $this->makeAdyenClient($config->apiKey, $config->environment ?? 'test');
         $paymentsApi = new PaymentsApi($client);
 
         $amount = new Amount;
@@ -67,9 +59,9 @@ class AdyenPaymentProvider extends BasePaymentProvider
         $request = new CreateCheckoutSessionRequest;
         $request->setReference(Str::upper($payment->id))
             ->setAmount($amount)
-            ->setMerchantAccount($adyenConfig->merchantAccount)
+            ->setMerchantAccount($config->merchantAccount)
             ->setCountryCode('NO') // TODO: Make this dynamic. FE should send country code or get from tenant config?
-            ->setReturnUrl($adyenConfig->redirectUrl);
+            ->setReturnUrl($config->redirectUrl);
 
         $captureDelay = $payment->getCaptureConfigurationForProvider();
         $request->setCaptureDelayHours($captureDelay);
@@ -77,7 +69,9 @@ class AdyenPaymentProvider extends BasePaymentProvider
         $idempotencyKey = $payment->id;
         $response = $paymentsApi->sessions($request, ['idempotencyKey' => $idempotencyKey]);
 
+        $status = PaymentStatus::INITIATED;
         $payment->update([
+            'status' => $status,
             'metadata' => [
                 'sessionId' => $response->getId(),
                 'sessionData' => $response->getSessionData(),
@@ -86,7 +80,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
 
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: PaymentStatus::INITIATED,
+            status: PaymentStatus::INITIATED,
             payload: $response->toArray()
         );
 
@@ -106,15 +100,18 @@ class AdyenPaymentProvider extends BasePaymentProvider
      *
      * @return PaymentResponse The response containing the charge status and details.
      *
+     * @throws AdyenException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function charge(Payment $payment): PaymentResponse
+    public function charge(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
 
-        $adyenConfig = $this->configResolver->resolve(PaymentProvider::ADYEN);
-        $client = $this->makeAdyenClient($adyenConfig->apiKey, $adyenConfig->environment ?? 'test');
-        $modificationsApi = new \Adyen\Service\Checkout\ModificationsApi($client);
+        $client = $this->makeAdyenClient($config->apiKey, $config->environment ?? 'test');
+        $modificationsApi = new ModificationsApi($client);
 
         try {
             $captureRequest = new PaymentCaptureRequest([
@@ -122,7 +119,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
                     'currency' => $payment->currency,
                     'value' => $payment->amount_minor,
                 ],
-                'merchantAccount' => $adyenConfig->merchantAccount,
+                'merchantAccount' => $config->merchantAccount,
                 'reference' => $payment->id,
             ]);
 
@@ -135,7 +132,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
 
             $this->recordPaymentEvent(
                 payment: $payment,
-                newStatus: $status,
+                status: $status,
                 payload: $response->toArray()
             );
 
@@ -147,7 +144,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
         } catch (Throwable $e) {
             $this->recordPaymentEvent(
                 payment: $payment,
-                newStatus: PaymentStatus::FAILED,
+                status: PaymentStatus::FAILED,
                 payload: ['error' => $e->getMessage()]
             );
             throw $e;
@@ -163,15 +160,18 @@ class AdyenPaymentProvider extends BasePaymentProvider
      *
      * @return RefundResponse The response containing the refund status.
      *
+     * @throws AdyenException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function refund(PaymentRefund $refund): RefundResponse
+    public function refund(PaymentRefund $refund, PaymentProviderConfig $config): RefundResponse
     {
         $this->ensureStatus($refund->payment, PaymentStatus::CHARGED);
 
-        $adyenConfig = $this->configResolver->resolve(PaymentProvider::ADYEN);
-        $client = $this->makeAdyenClient($adyenConfig->apiKey, $adyenConfig->environment ?? 'test');
-        $modificationsApi = new \Adyen\Service\Checkout\ModificationsApi($client);
+        $client = $this->makeAdyenClient($config->apiKey, $config->environment ?? 'test');
+        $modificationsApi = new ModificationsApi($client);
 
         try {
             $refundRequest = new PaymentRefundRequest([
@@ -179,7 +179,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
                     'currency' => $refund->currency,
                     'value' => $refund->amount_minor,
                 ],
-                'merchantAccount' => $adyenConfig->merchantAccount,
+                'merchantAccount' => $config->merchantAccount,
                 'reference' => $refund->payment_id,
             ]);
 
@@ -198,7 +198,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
 
             $this->recordRefundEvent(
                 refund: $refund,
-                newStatus: $status,
+                status: $status,
                 payload: $refundResponse->toArray(),
             );
 
@@ -208,9 +208,10 @@ class AdyenPaymentProvider extends BasePaymentProvider
                 responseData: $refundResponse->toArray()
             );
         } catch (Throwable $e) {
+            $status = PaymentStatus::FAILED;
             $this->recordRefundEvent(
                 refund: $refund,
-                newStatus: PaymentStatus::REFUND_FAILED,
+                status: $status,
                 payload: ['error' => $e->getMessage()],
             );
             throw $e;
@@ -224,43 +225,55 @@ class AdyenPaymentProvider extends BasePaymentProvider
      *
      * @return PaymentResponse The response containing the cancel status.
      *
+     * @throws AdyenException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function cancel(Payment $payment): PaymentResponse
+    public function cancel(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
 
-        $adyenConfig = $this->configResolver->resolve(PaymentProvider::ADYEN);
-        $client = $this->makeAdyenClient($adyenConfig->apiKey, $adyenConfig->environment ?? 'test');
-        $modificationsApi = new \Adyen\Service\Checkout\ModificationsApi($client);
+        $client = $this->makeAdyenClient($config->apiKey, $config->environment ?? 'test');
+        $modificationsApi = new ModificationsApi($client);
 
         try {
             $cancelRequest = new StandalonePaymentCancelRequest([
                 'paymentReference' => $payment->external_id,
-                'merchantAccount' => $adyenConfig->merchantAccount,
+                'merchantAccount' => $config->merchantAccount,
                 'reference' => $payment->id,
             ]);
 
             $cancellationResponse = $modificationsApi->cancelAuthorisedPayment($cancelRequest);
-        } catch (Throwable $e) {
+
+            $status = PaymentStatus::CANCELLED;
+            $payment->update([
+                'status' => $status,
+            ]);
+
             $this->recordPaymentEvent(
                 payment: $payment,
-                newStatus: PaymentStatus::FAILED,
+                status: $status,
+                payload: $cancellationResponse->toArray()
+            );
+
+            return new PaymentResponse(
+                status: $status,
+                payment: $payment,
+                responseData: $cancellationResponse->toArray()
+            );
+        } catch (Throwable $e) {
+
+            $status = PaymentStatus::FAILED;
+            $this->recordPaymentEvent(
+                payment: $payment,
+                status: $status,
                 payload: ['error' => $e->getMessage()]
             );
+
             throw $e;
         }
 
-        $this->recordPaymentEvent(
-            payment: $payment,
-            newStatus: PaymentStatus::CANCELLED,
-            payload: $cancellationResponse->toArray()
-        );
-
-        return new PaymentResponse(
-            status: PaymentStatus::CANCELLED,
-            payment: $payment,
-            responseData: $cancellationResponse->toArray()
-        );
     }
 }

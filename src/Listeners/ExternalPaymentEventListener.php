@@ -96,7 +96,6 @@ class ExternalPaymentEventListener implements ShouldQueue
     private function resolvePaymentAndRefund($callbackData): array
     {
         $refund = null;
-        $payment = null;
 
         if ($callbackData->isRefundEvent()) {
             $refund = PaymentRefund::where('external_refund_id', $callbackData->externalId)->firstOrFail();

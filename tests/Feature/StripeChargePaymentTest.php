@@ -82,7 +82,7 @@ it('initiates and handles charge callback correctly', function (string $external
         ->and($payment->external_id)->toBe($externalId)
         ->and($payment->events)->toHaveCount(1)
         ->sequence(
-            fn ($event) => $event->event->toBe(PaymentStatus::RESERVED->value)
+            fn ($event) => $event->event->toBe(PaymentStatus::RESERVED)
         );
 })->with([
     ['pi_test_123'],
@@ -127,7 +127,7 @@ it('does not charge a payment when capture_at is set', function (string $payment
         ->and($payment->external_charge_id)->toBeNull()
         ->and($payment->events)->toHaveCount(1)
         ->sequence(
-            fn ($event) => $event->event->toBe(PaymentStatus::RESERVED->value)
+            fn ($event) => $event->event->toBe(PaymentStatus::RESERVED)
         );
 })->with([
     ['pi_test_123'],

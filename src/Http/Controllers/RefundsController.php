@@ -7,12 +7,17 @@ namespace Bilberry\PaymentGateway\Http\Controllers;
 use Bilberry\PaymentGateway\Data\PaymentRefundData;
 use Bilberry\PaymentGateway\Data\RefundResponse;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
-use Bilberry\PaymentGateway\Services\PaymentGateway;
+use Bilberry\PaymentGateway\PaymentGateway;
 use Throwable;
 
 class RefundsController extends Controller
 {
+    public function __construct(
+        private readonly PaymentGateway $gateway
+    ) {}
+
     /**
      * Initiates a refund of a charge using a specified provider.
      *
@@ -26,13 +31,17 @@ class RefundsController extends Controller
     public function store(PaymentRefundData $data): RefundResponse
     {
         try {
-            $providerInstance = PaymentGateway::getProvider(PaymentProvider::tryFrom($data->provider));
+            $configResolver = app(PaymentProviderConfigResolverInterface::class);
+            $provider = PaymentProvider::tryFrom($data->provider);
+            $config = $configResolver->resolve($provider);
+
             $refund = PaymentRefund::create([
                 'payment_id' => $data->payment_id,
                 'amount_minor' => $data->amount_minor,
                 'currency' => $data->currency,
             ]);
-            $response = $providerInstance->refund($refund);
+
+            $response = $this->gateway->refund($refund, $config);
         } catch (Throwable $e) {
             abort(400, $e->getMessage());
         }

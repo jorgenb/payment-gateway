@@ -6,7 +6,6 @@ namespace Tests\Feature\Payments;
 
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
-use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Providers\StripePaymentProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -45,8 +44,7 @@ afterEach(function (): void {
 });
 
 it('initiates a payment and records events', function (): void {
-    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
-    $provider = new StripePaymentProvider($resolver);
+    $provider = new StripePaymentProvider;
 
     $payment = Payment::factory()->stripe()->pending()->create([
         'amount_minor' => 10000,
@@ -54,7 +52,17 @@ it('initiates a payment and records events', function (): void {
         'external_charge_id' => null,
     ]);
 
-    $response = $provider->initiate($payment);
+    $config = new \Bilberry\PaymentGateway\Data\PaymentProviderConfig(
+        context_id: 'could_be_some_tenant_id',
+        apiKey: 'test_key_123',
+        merchantAccount: 'merchant_abc',
+        environment: 'test',
+        termsUrl: null,
+        redirectUrl: null,
+        webhookSigningSecret: null
+    );
+
+    $response = $provider->initiate($payment, $config);
 
     $payment->refresh();
 
@@ -68,12 +76,11 @@ it('initiates a payment and records events', function (): void {
         ->external_id->toBe('pi_test_123')
         ->and($payment->events)->toHaveCount(1)
         ->sequence(
-            fn ($event) => $event->event->toBe(PaymentStatus::INITIATED->value)
+            fn ($event) => $event->event->toBe(PaymentStatus::INITIATED)
         );
 });
 
 it('handles failed payment creation', function (): void {
-    // Set a mock HTTP client that throws an exception on request
     ApiRequestor::setHttpClient(new class implements ClientInterface
     {
         public function request(
@@ -89,15 +96,24 @@ it('handles failed payment creation', function (): void {
         }
     });
 
-    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
-    $provider = new StripePaymentProvider($resolver);
+    $provider = new StripePaymentProvider;
 
     $payment = Payment::factory()->stripe()->pending()->create([
         'amount_minor' => 10000,
         'external_id' => null,
     ]);
 
-    expect(fn () => $provider->initiate($payment))
+    $config = new \Bilberry\PaymentGateway\Data\PaymentProviderConfig(
+        context_id: 'could_be_some_tenant_id',
+        apiKey: 'test_key_123',
+        merchantAccount: 'merchant_abc',
+        environment: 'test',
+        termsUrl: null,
+        redirectUrl: null,
+        webhookSigningSecret: null
+    );
+
+    expect(fn () => $provider->initiate($payment, $config))
         ->toThrow(\Stripe\Exception\InvalidRequestException::class);
 
     $payment->refresh();

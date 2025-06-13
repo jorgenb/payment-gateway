@@ -8,17 +8,19 @@ use Bilberry\PaymentGateway\Connectors\NetsConnector;
 use Bilberry\PaymentGateway\Data\NetsPaymentChargeResponseData;
 use Bilberry\PaymentGateway\Data\NetsPaymentRefundResponseData;
 use Bilberry\PaymentGateway\Data\NetsPaymentResponseData;
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
-use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Http\Requests\NetsCancelPaymentRequest;
 use Bilberry\PaymentGateway\Http\Requests\NetsChargePaymentRequest;
 use Bilberry\PaymentGateway\Http\Requests\NetsCreatePaymentRequest;
 use Bilberry\PaymentGateway\Http\Requests\NetsRefundChargeRequest;
-use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
+use Brick\Math\Exception\NumberFormatException;
+use Brick\Math\Exception\RoundingNecessaryException;
+use Brick\Money\Exception\UnknownCurrencyException;
 use JsonException;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
@@ -26,17 +28,8 @@ use Throwable;
 
 class NetsPaymentProvider extends BasePaymentProvider
 {
-    private readonly PaymentProviderConfigResolverInterface $configResolver;
-
-    public function __construct(PaymentProviderConfigResolverInterface $configResolver)
+    private function createConnector(PaymentProviderConfig $config): NetsConnector
     {
-        $this->configResolver = $configResolver;
-    }
-
-    private function createConnector(): NetsConnector
-    {
-        $config = $this->configResolver->resolve(PaymentProvider::NETS);
-
         return new NetsConnector(
             apiKey: $config->apiKey,
             merchantAccount: $config->merchantAccount,
@@ -47,24 +40,30 @@ class NetsPaymentProvider extends BasePaymentProvider
      * Initiates a one-time payment using the Nets API.
      *
      * @throws Throwable
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
+     * @throws UnknownCurrencyException
      */
-    public function initiate(Payment $payment): PaymentResponse
+    public function initiate(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::PENDING);
         $request = new NetsCreatePaymentRequest($payment);
 
-        $connector = $this->createConnector();
+        $connector = $this->createConnector($config);
         $response = $this->handlePaymentConnectorRequest($payment, $request, $connector);
 
         /** @var NetsPaymentResponseData $responseData */
         $responseData = $response->dto();
+
+        $status = PaymentStatus::INITIATED;
         $payment->update([
+            'status' => $status,
             'external_id' => $responseData->paymentId,
         ]);
 
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: PaymentStatus::INITIATED,
+            status: $status,
             payload: $responseData->rawPayload
         );
 
@@ -78,28 +77,31 @@ class NetsPaymentProvider extends BasePaymentProvider
     /**
      * Charges a previously reserved payment using the Nets API.
      *
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function charge(Payment $payment): PaymentResponse
+    public function charge(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
 
         $request = new NetsChargePaymentRequest($payment);
 
-        $connector = $this->createConnector();
+        $connector = $this->createConnector($config);
         $response = $this->handlePaymentConnectorRequest($payment, $request, $connector);
 
         /** @var NetsPaymentChargeResponseData $responseData */
         $responseData = $response->dto();
+
+        $status = PaymentStatus::PROCESSING;
         $payment->update([
             'external_charge_id' => $responseData->chargeId,
         ]);
 
-        $status = PaymentStatus::PROCESSING;
-
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: PaymentStatus::PROCESSING,
+            status: $status,
             payload: $responseData->rawPayload
         );
 
@@ -113,17 +115,20 @@ class NetsPaymentProvider extends BasePaymentProvider
     /**
      * Cancels a reserved payment using the Nets API.
      *
-     * @throws Throwable
      * @throws JsonException
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
+     * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function cancel(Payment $payment): PaymentResponse
+    public function cancel(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::RESERVED);
 
         // Instantiate the request for canceling a payment.
         $request = new NetsCancelPaymentRequest($payment);
 
-        $connector = $this->createConnector();
+        $connector = $this->createConnector($config);
         $response = $this->handlePaymentConnectorRequest($payment, $request, $connector);
 
         $responseData = $response->json();
@@ -132,7 +137,7 @@ class NetsPaymentProvider extends BasePaymentProvider
 
         $this->recordPaymentEvent(
             payment: $payment,
-            newStatus: $status,
+            status: $status,
             payload: $responseData
         );
 
@@ -147,23 +152,27 @@ class NetsPaymentProvider extends BasePaymentProvider
      * Refunds a previously settled transaction.
      * Supports both full and partial refunds.
      *
+     * @throws NumberFormatException
+     * @throws RoundingNecessaryException
      * @throws Throwable
+     * @throws UnknownCurrencyException
      */
-    public function refund(PaymentRefund $refund): RefundResponse
+    public function refund(PaymentRefund $refund, PaymentProviderConfig $config): RefundResponse
     {
         $this->ensureStatus($refund->payment, PaymentStatus::CHARGED);
 
         $request = new NetsRefundChargeRequest($refund);
         $request->headers()->add('Idempotency-Key', $refund->id);
 
-        $connector = $this->createConnector();
+        $connector = $this->createConnector($config);
 
         try {
             $response = $connector->send($request);
         } catch (Throwable $e) {
+            $status = PaymentStatus::FAILED;
             $this->recordRefundEvent(
                 refund: $refund,
-                newStatus: PaymentStatus::REFUND_FAILED,
+                status: $status,
                 payload: [
                     'error' => $e->getMessage(),
                 ],
@@ -182,7 +191,7 @@ class NetsPaymentProvider extends BasePaymentProvider
 
         $this->recordRefundEvent(
             refund: $refund,
-            newStatus: $status,
+            status: $status,
             payload: $responseData->rawPayload,
         );
 
@@ -203,9 +212,11 @@ class NetsPaymentProvider extends BasePaymentProvider
         try {
             return $connector->send($request);
         } catch (Throwable $e) {
+            $status = PaymentStatus::FAILED;
+            $payment->update(['status' => $status]);
             $this->recordPaymentEvent(
                 payment: $payment,
-                newStatus: PaymentStatus::FAILED,
+                status: $status,
                 payload: [
                     'error' => $e->getMessage(),
                 ]

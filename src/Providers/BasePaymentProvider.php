@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bilberry\PaymentGateway\Providers;
 
 use Bilberry\PaymentGateway\Data\PaymentCallbackData;
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Events\ExternalPaymentEvent;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
@@ -30,6 +31,22 @@ abstract class BasePaymentProvider implements PaymentProviderInterface
         $this->recordExternalEvent($data);
     }
 
+    public function recordPaymentEvent(Payment $payment, PaymentStatus $status, array $payload = []): void
+    {
+        $payment->events()->create([
+            'event' => $payment->status,
+            'payload' => $payload,
+        ]);
+    }
+
+    public function recordRefundEvent(PaymentRefund $refund, PaymentStatus $status, array $payload = []): void
+    {
+        $refund->payment->events()->create([
+            'event' => $status,
+            'payload' => $payload,
+        ]);
+    }
+
     /**
      * Dispatches an external payment event for a given provider.
      *
@@ -42,57 +59,59 @@ abstract class BasePaymentProvider implements PaymentProviderInterface
         ExternalPaymentEvent::dispatch($data);
     }
 
-    /**
-     * Records a payment event and updates the payment status.
-     *
-     * @param  Payment  $payment  The payment model instance
-     * @param  PaymentStatus  $newStatus  New payment status
-     * @param  array  $payload  Additional event data
-     *
-     * @throws NumberFormatException
-     * @throws RoundingNecessaryException
-     * @throws UnknownCurrencyException
-     */
-    public function recordPaymentEvent(
-        Payment $payment,
-        PaymentStatus $newStatus,
-        array $payload = [],
-        ?PaymentCallbackData $callbackData = null
-    ): void {
-        PaymentEvent::dispatch(
-            $payment,
-            $newStatus,
-            $payload,
-            $payment->getAmountAttribute(),
-            $callbackData
-        );
-    }
+    //    /**
+    //     * Records a payment event and updates the payment status.
+    //     *
+    //     * @param  Payment  $payment  The payment model instance
+    //     * @param  PaymentStatus  $newStatus  New payment status
+    //     * @param  array  $payload  Additional event data
+    //     *
+    //     * @throws NumberFormatException
+    //     * @throws RoundingNecessaryException
+    //     * @throws UnknownCurrencyException
+    //     */
+    //    public function recordPaymentEvent(
+    //        Payment $payment,
+    //        PaymentStatus $newStatus,
+    //        array $payload = [],
+    //        ?PaymentCallbackData $callbackData = null,
+    //        ?PaymentProviderConfig $providerConfig = null,
+    //    ): void {
+    //        PaymentEvent::dispatch(
+    //            $payment,
+    //            $newStatus,
+    //            $payload,
+    //            $payment->getAmountAttribute(),
+    //            $callbackData,
+    //            $providerConfig,
+    //        );
+    //    }
 
-    /**
-     * Records a refund event and updates the refund status.
-     *
-     * @param  PaymentRefund  $refund  The refund model instance
-     * @param  PaymentStatus  $newStatus  New refund status
-     * @param  array  $payload  Additional event data
-     *
-     * @throws NumberFormatException
-     * @throws RoundingNecessaryException
-     * @throws UnknownCurrencyException
-     */
-    public function recordRefundEvent(
-        PaymentRefund $refund,
-        PaymentStatus $newStatus,
-        array $payload = [],
-        ?PaymentCallbackData $callbackData = null
-    ): void {
-        RefundEvent::dispatch(
-            $refund,
-            $newStatus,
-            $payload,
-            $refund->getAmountAttribute(),
-            $callbackData
-        );
-    }
+    //    /**
+    //     * Records a refund event and updates the refund status.
+    //     *
+    //     * @param  PaymentRefund  $refund  The refund model instance
+    //     * @param  PaymentStatus  $newStatus  New refund status
+    //     * @param  array  $payload  Additional event data
+    //     *
+    //     * @throws NumberFormatException
+    //     * @throws RoundingNecessaryException
+    //     * @throws UnknownCurrencyException
+    //     */
+    //    public function recordRefundEvent(
+    //        PaymentRefund $refund,
+    //        PaymentStatus $newStatus,
+    //        array $payload = [],
+    //        ?PaymentCallbackData $callbackData = null
+    //    ): void {
+    //        RefundEvent::dispatch(
+    //            $refund,
+    //            $newStatus,
+    //            $payload,
+    //            $refund->getAmountAttribute(),
+    //            $callbackData
+    //        );
+    //    }
 
     /**
      * Ensures that the payment is in the expected status before proceeding.

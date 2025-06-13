@@ -34,6 +34,7 @@ class PaymentFactory extends Factory
             'metadata' => [],
             'auto_capture' => true,
             'capture_at' => null,
+            'context_id' => null,
         ];
     }
 
@@ -62,6 +63,13 @@ class PaymentFactory extends Factory
     {
         return $this->state([
             'status' => PaymentStatus::PENDING->value,
+        ]);
+    }
+
+    public function initiated(): self
+    {
+        return $this->state([
+            'status' => PaymentStatus::INITIATED->value,
         ]);
     }
 
@@ -97,6 +105,13 @@ class PaymentFactory extends Factory
     {
         return $this->state([
             'capture_at' => $captureAt ?? now()->addDay(),
+        ]);
+    }
+
+    public function withContext(string $contextId): self
+    {
+        return $this->state([
+            'context_id' => $contextId,
         ]);
     }
 }

@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Interfaces;
 
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
 use Bilberry\PaymentGateway\Events\RefundEvent;
+use Bilberry\PaymentGateway\Models\Payment;
 
 interface PaymentEventHandlerInterface
 {
+    /**
+     * Resolve the provider config for a given payment at runtime using the context_id.
+     */
+    public function resolveConfig(Payment $payment): PaymentProviderConfig;
+
     public function handle(PaymentEvent|RefundEvent $event): void;
 
     public function handleInitiated(PaymentEvent $event): void;

@@ -14,7 +14,9 @@ it('initiates a Nets payment using the PaymentProviderConfigResolverInterface', 
     $this->mockNetsSuccessfulPayment($paymentId);
 
     $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
-    $provider = new NetsPaymentProvider($resolver);
+    $config = $resolver->resolve(\Bilberry\PaymentGateway\Enums\PaymentProvider::NETS);
+
+    $provider = app(NetsPaymentProvider::class);
 
     $payment = Payment::factory()->nets()->pending()->create([
         'currency' => 'NOK',
@@ -22,7 +24,7 @@ it('initiates a Nets payment using the PaymentProviderConfigResolverInterface', 
         'status' => PaymentStatus::PENDING,
     ]);
 
-    $response = $provider->initiate($payment);
+    $response = $provider->initiate($payment, $config);
 
     expect($response->status)->toBe(PaymentStatus::INITIATED)
         ->and($response->responseData['paymentId'])->toBe($paymentId);

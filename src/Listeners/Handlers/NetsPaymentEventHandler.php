@@ -8,6 +8,7 @@ use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
 use Bilberry\PaymentGateway\Listeners\PaymentEventListener;
+use Bilberry\PaymentGateway\PaymentGateway;
 use Bilberry\PaymentGateway\Providers\NetsPaymentProvider;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -19,7 +20,10 @@ use Throwable;
  */
 readonly class NetsPaymentEventHandler extends AbstractPaymentEventHandler
 {
-    public function __construct(private NetsPaymentProvider $netsPaymentProvider) {}
+    public function __construct(
+        private NetsPaymentProvider $netsPaymentProvider,
+        private PaymentGateway $paymentGateway
+    ) {}
 
     protected function resolvePaymentProvider(): PaymentProviderInterface
     {
@@ -44,7 +48,10 @@ readonly class NetsPaymentEventHandler extends AbstractPaymentEventHandler
                 Log::info(static::class.': Capturing payment', [
                     'event' => $event,
                 ]);
-                $this->netsPaymentProvider->charge($event->payment);
+
+                $config = $this->resolveConfig($event->payment);
+
+                $this->paymentGateway->charge($event->payment, $config);
             } catch (Throwable $exception) {
                 Log::error(static::class.': Failed to auto-capture payment', [
                     'event' => $event,

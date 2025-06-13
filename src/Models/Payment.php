@@ -36,6 +36,8 @@ use RuntimeException;
  * @property CarbonImmutable|null $capture_at
  * @property array|null $metadata
  * @property bool|null $auto_capture
+ * @property array|null $payment_config Stores the configuration object (API keys, merchant account, webhook secret, etc.) used for this payment, to guarantee callbacks can always be processed.
+ * @property string|null $context_id Arbitrary context reference for config resolution, set by the consuming application.
  * @property-read Money $total_charged_amount
  * @property-read Money $total_refunded_amount
  * @property-read Collection|PaymentEvent[] $events
@@ -68,6 +70,7 @@ class Payment extends Model
         'capture_at',
         'metadata',
         'auto_capture',
+        'context_id',
     ];
 
     protected $appends = [
@@ -86,6 +89,7 @@ class Payment extends Model
         'amount_minor' => 'integer',
         'type' => 'string',
         'auto_capture' => 'boolean',
+        'context_id' => 'string',
     ];
 
     public function events(): HasMany

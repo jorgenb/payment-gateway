@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Payments;
 
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
-use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Providers\NetsPaymentProvider;
 use Bilberry\PaymentGateway\Tests\Support\MocksNetsPayments;
@@ -16,8 +16,7 @@ use Saloon\Exceptions\Request\ClientException;
 uses(RefreshDatabase::class, MocksNetsPayments::class);
 
 beforeEach(function (): void {
-    $resolver = $this->app->make(PaymentProviderConfigResolverInterface::class);
-    $this->provider = new NetsPaymentProvider($resolver);
+    $this->provider = new NetsPaymentProvider;
 });
 
 it('initiates a payment and records events', function ($paymentId): void {
@@ -27,7 +26,17 @@ it('initiates a payment and records events', function ($paymentId): void {
         'amount_minor' => 10000,
     ]);
 
-    $response = $this->provider->initiate($payment);
+    $config = new PaymentProviderConfig(
+        context_id: 'test_context',
+        apiKey: 'test_key_123',
+        merchantAccount: 'merchant_abc',
+        environment: 'test',
+        termsUrl: null,
+        redirectUrl: null,
+        webhookSigningSecret: null
+    );
+
+    $response = $this->provider->initiate($payment, $config);
 
     expect($response->status)->toBe(PaymentStatus::INITIATED)
         ->and($response->payment->provider)->toBe(PaymentProvider::NETS)
@@ -41,7 +50,7 @@ it('initiates a payment and records events', function ($paymentId): void {
         ->external_id->toBe($paymentId)
         ->and($payment->events)->toHaveCount(1)
         ->sequence(
-            fn ($event) => $event->event->toBe(PaymentStatus::INITIATED->value)
+            fn ($event) => $event->event->toBe(PaymentStatus::INITIATED)
         );
 
 })->with('nets initiate payment response');
@@ -54,7 +63,17 @@ it('handles failed payment creation', function (): void {
         'external_id' => null,
     ]);
 
-    expect(fn () => $this->provider->initiate($payment))
+    $config = new PaymentProviderConfig(
+        context_id: 'test_context',
+        apiKey: 'test_key_123',
+        merchantAccount: 'merchant_abc',
+        environment: 'test',
+        termsUrl: null,
+        redirectUrl: null,
+        webhookSigningSecret: null
+    );
+
+    expect(fn () => $this->provider->initiate($payment, $config))
         ->toThrow(ClientException::class);
 
     $payment->refresh();

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Bilberry\PaymentGateway\Listeners\Handlers;
 
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Events\PaymentEvent;
 use Bilberry\PaymentGateway\Events\RefundEvent;
 use Bilberry\PaymentGateway\Interfaces\PaymentEventHandlerInterface;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
+use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Illuminate\Support\Facades\Log;
 
@@ -18,6 +21,17 @@ abstract readonly class AbstractPaymentEventHandler implements PaymentEventHandl
      * Resolve the specific payment provider instance for the handler.
      */
     abstract protected function resolvePaymentProvider(): PaymentProviderInterface;
+
+    /**
+     * Resolve the provider config for a given payment at runtime using the context_id.
+     */
+    public function resolveConfig(Payment $payment): PaymentProviderConfig
+    {
+        /** @var PaymentProviderConfigResolverInterface $resolver */
+        $resolver = app(PaymentProviderConfigResolverInterface::class);
+
+        return $resolver->resolve($payment->provider, $payment->context_id);
+    }
 
     /**
      * Dispatch the handling of the event to the appropriate status handler method.

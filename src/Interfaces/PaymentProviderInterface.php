@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bilberry\PaymentGateway\Interfaces;
 
 use Bilberry\PaymentGateway\Data\PaymentCallbackData;
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
@@ -18,7 +19,7 @@ interface PaymentProviderInterface
      *
      * @return PaymentResponse The response containing the payment details.
      */
-    public function initiate(Payment $payment): PaymentResponse;
+    public function initiate(Payment $payment, PaymentProviderConfig $config): PaymentResponse;
 
     /**
      * Charges a previously reserved payment.
@@ -28,7 +29,7 @@ interface PaymentProviderInterface
      *
      * @return PaymentResponse The response containing the charge status and details.
      */
-    public function charge(Payment $payment): PaymentResponse;
+    public function charge(Payment $payment, PaymentProviderConfig $config): PaymentResponse;
 
     /**
      * Refunds a previously settled transaction (a charged payment).
@@ -39,7 +40,7 @@ interface PaymentProviderInterface
      *
      * @return RefundResponse The response containing the refund status.
      */
-    public function refund(PaymentRefund $refund): RefundResponse;
+    public function refund(PaymentRefund $refund, PaymentProviderConfig $config): RefundResponse;
 
     /**
      * Cancels a reserved payment before it is charged.
@@ -48,7 +49,7 @@ interface PaymentProviderInterface
      *
      * @return PaymentResponse The response containing the cancel status.
      */
-    public function cancel(Payment $payment): PaymentResponse;
+    public function cancel(Payment $payment, PaymentProviderConfig $config): PaymentResponse;
 
     /**
      * Handles callbacks/webhooks from the payment provider.
@@ -59,32 +60,26 @@ interface PaymentProviderInterface
     public function handleCallback(PaymentCallbackData $data): void;
 
     /**
-     * Records a payment event and updates the payment status.
+     * Records a payment event in the database.
      *
      * @param  Payment  $payment  The payment model instance
-     * @param  PaymentStatus  $newStatus  New payment status
      * @param  array  $payload  Additional event data
-     * @param  PaymentCallbackData|null  $callbackData  Additional callback data
      */
     public function recordPaymentEvent(
         Payment $payment,
-        PaymentStatus $newStatus,
+        PaymentStatus $status,
         array $payload = [],
-        ?PaymentCallbackData $callbackData = null
     ): void;
 
     /**
      * Records a refund event and updates the refund status.
      *
      * @param  PaymentRefund  $refund  The refund model instance
-     * @param  PaymentStatus  $newStatus  New refund status
      * @param  array  $payload  Additional event data
-     * @param  PaymentCallbackData|null  $callbackData  Additional callback data
      */
     public function recordRefundEvent(
         PaymentRefund $refund,
-        PaymentStatus $newStatus,
+        PaymentStatus $status,
         array $payload = [],
-        ?PaymentCallbackData $callbackData = null
     ): void;
 }

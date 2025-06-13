@@ -7,7 +7,6 @@ use Bilberry\PaymentGateway\Commands\ConfigureStripeWebhooksCommand;
 use Bilberry\PaymentGateway\Commands\PaymentGatewayCommand;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Http\Controllers\PaymentCallbackController;
-use Bilberry\PaymentGateway\Http\Controllers\PaymentsController;
 use Bilberry\PaymentGateway\Http\Middleware\ProviderWebhookAuthorization;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
 use Bilberry\PaymentGateway\Interfaces\PaymentProviderInterface;
@@ -28,9 +27,12 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
      */
     public function bootingPackage(): void
     {
-        if (! $this->app->bound(PaymentProviderConfigResolverInterface::class)) {
-            throw new \RuntimeException('You must bind PaymentProviderConfigResolverInterface in your application.');
-        }
+        // Skip binding check when running under static analysis, tests, or CLI tools like PHPStan/Pest/PhpUnit/Composer
+        //        $isCliTool = app()->runningInConsole();
+        //
+        //        if (! $isCliTool && ! $this->app->bound(PaymentProviderConfigResolverInterface::class)) {
+        //            throw new \RuntimeException('You must bind PaymentProviderConfigResolverInterface in your application.');
+        //        }
 
         $this->app->make(Router::class)
             ->aliasMiddleware('webhooks', ProviderWebhookAuthorization::class);
@@ -47,6 +49,11 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
             ->name('payment-gateway')
             ->hasRoute('api')
             ->hasConfigFile()
+            // TODO: Make commands tenant aware
+            ->hasCommands([
+                ConfigureStripeWebhooksCommand::class,
+                ConfigureAdyenWebhooksCommand::class,
+            ])
             ->hasViews()
             ->hasMigrations([
                 'create_fake_payables_table',
@@ -63,29 +70,7 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
      */
     public function packageRegistered(): void
     {
-        $this->commands([
-            ConfigureStripeWebhooksCommand::class,
-            ConfigureAdyenWebhooksCommand::class,
-        ]);
-
         $this->app->register(EventServiceProvider::class);
-
-        // Register payment providers with injected config resolver
-        $this->app->singleton(AdyenPaymentProvider::class, function ($app) {
-            return new AdyenPaymentProvider(
-                $app->make(PaymentProviderConfigResolverInterface::class)
-            );
-        });
-        //        $this->app->singleton(StripePaymentProvider::class, function ($app) {
-        //            return new StripePaymentProvider(
-        //                $app->make(PaymentProviderConfigResolverInterface::class)
-        //            );
-        //        });
-        //        $this->app->singleton(NetsPaymentProvider::class, function ($app) {
-        //            return new NetsPaymentProvider(
-        //                $app->make(PaymentProviderConfigResolverInterface::class)
-        //            );
-        //        });
 
         $bindProvider = function ($app) {
             $provider = request()->get('provider') ?? request()->route('provider');
@@ -103,10 +88,6 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
         };
 
         $this->app->when(PaymentCallbackController::class)
-            ->needs(PaymentProviderInterface::class)
-            ->give($bindProvider);
-
-        $this->app->when(PaymentsController::class)
             ->needs(PaymentProviderInterface::class)
             ->give($bindProvider);
     }

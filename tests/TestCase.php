@@ -40,14 +40,29 @@ class TestCase extends Orchestra
             {
                 public function resolve(PaymentProvider $provider, mixed $context = null): PaymentProviderConfig
                 {
-                    return new PaymentProviderConfig(
-                        apiKey: 'test_api_key',
-                        environment: 'test',
-                        merchantAccount: 'TestMerchant',
-                        termsUrl: null,
-                        redirectUrl: 'https://example.com/return',
-                        webhookSigningSecret: null,
-                    );
+                    // Example: Use $context to change config if needed
+                    if ($context === 'tenant_b') {
+                        return PaymentProviderConfig::from([
+                            'apiKey' => 'api_key_for_tenant_b',
+                            'environment' => 'test',
+                            'merchantAccount' => 'MerchantB',
+                            'termsUrl' => null,
+                            'redirectUrl' => 'https://example.com/b-return',
+                            'webhookSigningSecret' => null,
+                            'context_id' => 'tenant_b',
+                        ]);
+                    }
+
+                    // Default config for all other contexts
+                    return PaymentProviderConfig::from([
+                        'apiKey' => 'test_api_key',
+                        'environment' => 'test',
+                        'merchantAccount' => 'TestMerchant',
+                        'termsUrl' => null,
+                        'redirectUrl' => 'https://example.com/return',
+                        'webhookSigningSecret' => null,
+                        'context_id' => $context ?? 'tenant_a',
+                    ]);
                 }
             };
         });

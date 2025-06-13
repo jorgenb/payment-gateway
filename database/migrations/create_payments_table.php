@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('external_id')->unique()->nullable();
             $table->string('external_charge_id')->unique()->nullable();
             $table->string('reference')->nullable();
+
+            $table->string('context_id', 255)->nullable()->comment('Arbitrary context identifier used for resolving provider config. Set by the consuming app.');
             $table->json('metadata')->nullable();
 
             // Indicates the timestamp at which a payment should be manually captured.

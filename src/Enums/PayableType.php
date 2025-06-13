@@ -11,8 +11,6 @@ use Modules\Invoices\Models\Invoice;
 
 enum PayableType: string
 {
-    case INVOICE = Invoice::class;
-
     /**
      * This is a stub payable model used in tests only.
      *
@@ -39,6 +37,7 @@ enum PayableType: string
         $normalized = mb_strtolower($name);
 
         foreach (self::cases() as $case) {
+            // @phpstan-ignore-next-line
             if (App::environment('production') && $case === self::FAKE_PAYABLE) {
                 continue;
             }

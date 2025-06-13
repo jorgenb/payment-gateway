@@ -39,7 +39,6 @@ class PaymentCallbackController extends Controller
 
                 return response()->noContent()->setStatusCode(202);
             }
-
         }
 
         return response()->noContent()->setStatusCode(202);
