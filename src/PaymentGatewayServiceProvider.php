@@ -36,6 +36,16 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
 
         $this->app->make(Router::class)
             ->aliasMiddleware('webhooks', ProviderWebhookAuthorization::class);
+
+        // Allow publishing of the package database seeder to the consuming application's seeder directory
+        $this->publishes([
+            __DIR__ . '/../database/seeders/FakePayablesDatabaseSeeder.php' =>
+                database_path('seeders/FakePayablesDatabaseSeeder.php'),
+        ], 'payment-gateway-seeders');
+
+        $this->publishes([
+            __DIR__.'/../resources/assets/sounds' => public_path('vendor/payment-gateway/sounds'),
+        ], 'public');
     }
 
     public function configurePackage(Package $package): void
@@ -47,14 +57,14 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
          */
         $package
             ->name('payment-gateway')
-            ->hasRoute('api')
+            ->hasRoutes(['api', 'web'])
             ->hasConfigFile()
             // TODO: Make commands tenant aware
             ->hasCommands([
                 ConfigureStripeWebhooksCommand::class,
                 ConfigureAdyenWebhooksCommand::class,
             ])
-            ->hasViews()
+            ->hasViews('payment-gateway')
             ->hasMigrations([
                 'create_fake_payables_table',
                 'create_payments_table',

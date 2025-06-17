@@ -53,8 +53,9 @@ it('initiates a payment and records events', function (): void {
     ]);
 
     $config = new \Bilberry\PaymentGateway\Data\PaymentProviderConfig(
-        context_id: 'could_be_some_tenant_id',
+        contextId: 'could_be_some_tenant_id',
         apiKey: 'test_key_123',
+        clientKey: 'test_client_key_123',
         merchantAccount: 'merchant_abc',
         environment: 'test',
         termsUrl: null,
@@ -68,7 +69,7 @@ it('initiates a payment and records events', function (): void {
 
     expect($response->status)->toBe(PaymentStatus::INITIATED)
         ->and($response->payment->provider)->toBe(PaymentProvider::STRIPE)
-        ->and($response->metadata)->toHaveKey('clientSecret')
+        ->and($response->metadata)->toHaveKey('clientKey')
         ->and($payment)
         ->provider->toBe(PaymentProvider::STRIPE)
         ->amount_minor->toBe(10000)
@@ -104,8 +105,9 @@ it('handles failed payment creation', function (): void {
     ]);
 
     $config = new \Bilberry\PaymentGateway\Data\PaymentProviderConfig(
-        context_id: 'could_be_some_tenant_id',
+        contextId: 'could_be_some_tenant_id',
         apiKey: 'test_key_123',
+        clientKey: 'client_abc',
         merchantAccount: 'merchant_abc',
         environment: 'test',
         termsUrl: null,

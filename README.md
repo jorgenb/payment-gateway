@@ -20,6 +20,13 @@ php artisan vendor:publish --tag="payment-gateway-migrations"
 php artisan migrate
 ```
 
+You can publish a test database seeder with:
+
+```bash
+php artisan vendor:publish --tag="payment-gateway-seeders"
+```
+
+```bash
 You can publish the config file with:
 
 ```bash
@@ -32,6 +39,8 @@ This is the contents of the published config file:
 return [
 ];
 ```
+
+```bash
 
 Optionally, you can publish the views using
 
@@ -112,7 +121,9 @@ use Bilberry\PaymentGateway\Facades\PaymentGateway;
 use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 
 $config = PaymentProviderConfig::from([
+    'contextId' => 'tenant_a'
     'apiKey' => env('STRIPE_SECRET'),
+    'clientKey' => env('STRIPE_CLIENT')
     'environment' => 'test',
     'merchantAccount' => 'your-merchant-id',
     'termsUrl' => 'https://example.com/terms',
@@ -184,9 +195,9 @@ This package provides a unified callback (webhook) endpoint for each supported p
 
 - **Endpoints:**  
   The package registers endpoints for each provider, such as:
-  - `/api/payments/callback/stripe`
-  - `/api/payments/callback/adyen`
-  - `/api/payments/callback/nets`
+  - `/api/v1/payments/callback/stripe`
+  - `/api/v1/payments/callback/adyen`
+  - `/api/v1/payments/callback/nets`
 
 - **Automatic Processing:**  
   All supported provider events are parsed and handled by the package, updating your payment and refund records as needed.
@@ -199,6 +210,29 @@ This package provides a unified callback (webhook) endpoint for each supported p
 
 - **Customization:**  
   If you need to extend or react to callback events (for example, to trigger domain-specific events or notifications), you can listen for Laravel events that the package dispatches after processing each callback.
+
+## API Routes & Security
+
+This package registers all necessary API routes automatically to manage payments, refunds, and handle provider callbacks.  
+**You are responsible for securing these routes appropriately using your own middleware.**
+
+### Required Middleware
+
+You must register two middleware aliases in your consuming application:
+
+- `payment-gateway-widget-key`: Protects routes accessible by widgets/public clients.
+- `payment-gateway-client`: Protects routes requiring client credentials (such as for backend or machine-to-machine integrations).
+
+Example for Laravel 12 (`bootstrap/app.php`):
+
+```php
+$app->routeMiddleware([
+    'payment-gateway-widget-key' => \App\Http\Middleware\WidgetKeyMiddleware::class,
+    'payment-gateway-client' => \Laravel\Passport\Http\Middleware\EnsureClientIsResourceOwner::class, // Requires Laravel Passport
+]);
+```
+
+See the Laravel documentation for details on [middleware registration](https://laravel.com/docs/middleware).
 
 ## Testing
 

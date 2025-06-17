@@ -27,8 +27,9 @@ it('initiates a payment and records events', function ($paymentId): void {
     ]);
 
     $config = new PaymentProviderConfig(
-        context_id: 'test_context',
+        contextId: 'test_context',
         apiKey: 'test_key_123',
+        clientKey: 'test_key_123',
         merchantAccount: 'merchant_abc',
         environment: 'test',
         termsUrl: null,
@@ -64,8 +65,9 @@ it('handles failed payment creation', function (): void {
     ]);
 
     $config = new PaymentProviderConfig(
-        context_id: 'test_context',
+        contextId: 'test_context',
         apiKey: 'test_key_123',
+        clientKey: 'test_key_123',
         merchantAccount: 'merchant_abc',
         environment: 'test',
         termsUrl: null,

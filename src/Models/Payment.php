@@ -92,6 +92,10 @@ class Payment extends Model
         'context_id' => 'string',
     ];
 
+    protected $hidden = [
+        'payable_type'
+    ];
+
     public function events(): HasMany
     {
         return $this->hasMany(PaymentEvent::class);

@@ -11,6 +11,7 @@ use Bilberry\PaymentGateway\Data\NetsPaymentResponseData;
 use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
+use Bilberry\PaymentGateway\Data\WidgetMetadataData;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Http\Requests\NetsCancelPaymentRequest;
 use Bilberry\PaymentGateway\Http\Requests\NetsChargePaymentRequest;
@@ -47,7 +48,7 @@ class NetsPaymentProvider extends BasePaymentProvider
     public function initiate(Payment $payment, PaymentProviderConfig $config): PaymentResponse
     {
         $this->ensureStatus($payment, PaymentStatus::PENDING);
-        $request = new NetsCreatePaymentRequest($payment);
+        $request = new NetsCreatePaymentRequest($payment, $config);
 
         $connector = $this->createConnector($config);
         $response = $this->handlePaymentConnectorRequest($payment, $request, $connector);
@@ -70,7 +71,8 @@ class NetsPaymentProvider extends BasePaymentProvider
         return new PaymentResponse(
             status: PaymentStatus::INITIATED,
             payment: $payment,
-            responseData: $responseData->rawPayload
+            responseData: $responseData->rawPayload,
+            metadata: WidgetMetadataData::from(['clientKey' => $config->clientKey])->toArray()
         );
     }
 

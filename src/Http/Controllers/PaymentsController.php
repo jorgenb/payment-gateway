@@ -28,7 +28,10 @@ class PaymentsController extends Controller
     {
         try {
             $configResolver = app(PaymentProviderConfigResolverInterface::class);
-            $config = $configResolver->resolve(PaymentProvider::tryFrom($data->provider));
+            $config = $configResolver->resolve(
+                PaymentProvider::tryFrom($data->provider),
+                $data->context_id
+            );
 
             return $this->gateway->create($data, $config);
         } catch (Throwable $exception) {

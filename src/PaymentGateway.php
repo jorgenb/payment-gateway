@@ -35,7 +35,7 @@ class PaymentGateway
                 'status' => PaymentStatus::PENDING,
                 'capture_at' => $data->capture_at,
                 'auto_capture' => $data->auto_capture,
-                'context_id' => $config->context_id,
+                'context_id' => $config->contextId ?? null,
             ]);
 
             $provider = $this->getProvider(PaymentProvider::tryFrom($data->provider));

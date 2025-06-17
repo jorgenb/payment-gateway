@@ -7,6 +7,7 @@ namespace Bilberry\PaymentGateway\Providers;
 use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
+use Bilberry\PaymentGateway\Data\WidgetMetadataData;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
@@ -41,6 +42,7 @@ class StripePaymentProvider extends BasePaymentProvider
             'currency' => $payment->currency,
             'metadata' => [
                 'merchantReference' => $payment->id,
+                'contextId' => $config->contextId,
             ],
             'automatic_payment_methods' => [
                 'enabled' => true,
@@ -52,8 +54,13 @@ class StripePaymentProvider extends BasePaymentProvider
 
         $status = PaymentStatus::INITIATED;
         $payment->update([
+            'context_id' => $config->contextId,
             'status' => $status,
             'external_id' => $intentResponse->id,
+            'metadata' => [
+                'clientKey' => $config->clientKey,
+                'clientSecret' => $intentResponse->client_secret,
+            ],
         ]);
 
         $this->recordPaymentEvent(
@@ -65,7 +72,12 @@ class StripePaymentProvider extends BasePaymentProvider
             status: $status,
             payment: $payment,
             responseData: $intentResponse->toArray(),
-            metadata: ['clientSecret' => $intentResponse->client_secret]
+            metadata: WidgetMetadataData::from(
+                [
+                    'clientKey' => $config->clientKey,
+                    'clientSecret' => $intentResponse->client_secret,
+                ]
+            )->toArray()
         );
     }
 
@@ -154,7 +166,7 @@ class StripePaymentProvider extends BasePaymentProvider
                 'amount' => $refund->amount_minor,
                 'metadata' => [
                     'refund_id' => $refund->id,
-                    'payment_id' => $refund->payment->id,
+                    'merchantReference' => $refund->payment->id,
                     'external_id' => $refund->payment->external_id,
                 ],
             ], [

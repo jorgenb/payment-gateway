@@ -33,35 +33,35 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app): void
     {
         config()->set('database.default', 'testing');
-        config()->set('payment-gateway.nets.base_url', 'https://api.example.com');
 
         $app->singleton(PaymentProviderConfigResolverInterface::class, function () {
             return new class implements PaymentProviderConfigResolverInterface
             {
                 public function resolve(PaymentProvider $provider, mixed $context = null): PaymentProviderConfig
                 {
-                    // Example: Use $context to change config if needed
                     if ($context === 'tenant_b') {
                         return PaymentProviderConfig::from([
+                            'contextId' => $context,
                             'apiKey' => 'api_key_for_tenant_b',
+                            'clientKey' => 'client_key_for_tenant_b',
                             'environment' => 'test',
                             'merchantAccount' => 'MerchantB',
                             'termsUrl' => null,
                             'redirectUrl' => 'https://example.com/b-return',
-                            'webhookSigningSecret' => null,
-                            'context_id' => 'tenant_b',
+                            'webhookSigningSecret' => 'test_webhook_secret'
                         ]);
                     }
 
                     // Default config for all other contexts
                     return PaymentProviderConfig::from([
+                        'contextId' => null,
                         'apiKey' => 'test_api_key',
+                        'clientKey' => 'test_client_key',
                         'environment' => 'test',
                         'merchantAccount' => 'TestMerchant',
                         'termsUrl' => null,
                         'redirectUrl' => 'https://example.com/return',
-                        'webhookSigningSecret' => null,
-                        'context_id' => $context ?? 'tenant_a',
+                        'webhookSigningSecret' => 'test_webhook_secret',
                     ]);
                 }
             };

@@ -36,7 +36,11 @@ class NetsConnector extends Connector
      */
     public function resolveBaseUrl(): string
     {
-        return config('payment-gateway.nets.base_url');
+        $env = app()->environment();
+        if (in_array($env, ['local', 'testing', 'staging'])) {
+            return 'https://test.api.dibspayment.eu';
+        }
+        return 'https://api.dibspayment.eu';
     }
 
     protected function defaultHeaders(): array

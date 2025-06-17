@@ -31,15 +31,17 @@ class RefundsController extends Controller
     public function store(PaymentRefundData $data): RefundResponse
     {
         try {
-            $configResolver = app(PaymentProviderConfigResolverInterface::class);
-            $provider = PaymentProvider::tryFrom($data->provider);
-            $config = $configResolver->resolve($provider);
 
             $refund = PaymentRefund::create([
                 'payment_id' => $data->payment_id,
                 'amount_minor' => $data->amount_minor,
                 'currency' => $data->currency,
             ]);
+
+            $provider = PaymentProvider::tryFrom($data->provider);
+            $contextId = $refund->payment->context_id;
+            $configResolver = app(PaymentProviderConfigResolverInterface::class);
+            $config = $configResolver->resolve($provider, $contextId);
 
             $response = $this->gateway->refund($refund, $config);
         } catch (Throwable $e) {

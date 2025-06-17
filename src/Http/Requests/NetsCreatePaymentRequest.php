@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bilberry\PaymentGateway\Http\Requests;
 
 use Bilberry\PaymentGateway\Data\NetsPaymentResponseData;
+use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
 use Bilberry\PaymentGateway\Models\Payment;
 use JsonException;
@@ -21,7 +22,8 @@ class NetsCreatePaymentRequest extends Request implements HasBody
     protected Method $method = Method::POST;
 
     public function __construct(
-        protected readonly Payment $payment
+        protected readonly Payment $payment,
+        protected PaymentProviderConfig $providerConfig
     ) {}
 
     /**
@@ -47,15 +49,15 @@ class NetsCreatePaymentRequest extends Request implements HasBody
 
     public function defaultBody(): array
     {
-        $secret = config('services.nets.webhook_secret'); // TODO: tenant specific config
+        $webhookSigningSecret = $this->providerConfig->webhookSigningSecret;
         $callbackUrl = $this->getRoute();
-        $quickCheckout = config('services.nets.quick_checkout');
+        $quickCheckout = true; //TODO: Add to paymentproviderconfig
 
         $body = [
             'myReference' => $this->payment->id,
             'checkout' => [
-                'url' => config('services.nets.checkout.url'),
-                'termsUrl' => config('services.nets.checkout.terms_url'),
+                'url' => $this->providerConfig->redirectUrl,
+                'termsUrl' => $this->providerConfig->termsUrl,
                 'integrationType' => 'EmbeddedCheckout',
             ],
             'order' => [
@@ -81,57 +83,57 @@ class NetsCreatePaymentRequest extends Request implements HasBody
                     [
                         'eventName' => 'payment.reservation.created',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.created',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.charge.created',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.reservation.failed',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.charge.failed',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.refund.initiated',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.refund.initiated.v2',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.refund.failed',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.refund.completed',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.cancel.created',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                     [
                         'eventName' => 'payment.cancel.failed',
                         'url' => $callbackUrl,
-                        'authorization' => $secret,
+                        'authorization' => $webhookSigningSecret,
                     ],
                 ],
             ],

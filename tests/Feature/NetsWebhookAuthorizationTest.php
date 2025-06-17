@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace Tests\Feature\Payments;
 
 use Bilberry\PaymentGateway\Models\Payment;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     $this->externalId = '47c66622daf04b77b0f5a51bf8a670e7';
+    $this->contextId = Str::uuid()->toString();
     $this->payment = Payment::factory()
         ->nets()
         ->pending()
         ->create([
             'external_id' => $this->externalId,
+            'context_id' => $this->contextId,
         ]);
-    $this->webhookSecret = 'test-webhook-secret';
-    config(['services.nets.webhook_secret' => $this->webhookSecret]);
+    $this->webhookSecret = 'test_webhook_secret';
 
     $this->validPayload = [
         'id' => $this->externalId,
@@ -23,6 +25,7 @@ beforeEach(function (): void {
         'timestamp' => '2024-11-06T19:02:21.0750+00:00',
         'merchantId' => 100242833,
         'data' => [
+            'myReference' => $this->payment->id,
             'order' => [
                 'amount' => ['amount' => '10000', 'currency' => 'NOK'],
             ],

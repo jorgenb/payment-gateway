@@ -7,6 +7,8 @@ namespace Bilberry\PaymentGateway\Http\Middleware;
 use Adyen\AdyenException;
 use Adyen\Util\HmacSignature;
 use Bilberry\PaymentGateway\Enums\PaymentProvider;
+use Bilberry\PaymentGateway\Interfaces\PaymentProviderConfigResolverInterface;
+use Bilberry\PaymentGateway\Models\Payment;
 use Closure;
 use Exception;
 use Illuminate\Http\Request;
@@ -29,7 +31,63 @@ class ProviderWebhookAuthorization
             );
         }
 
-        $secret = config("services.{$provider->value}.webhook_secret");
+        if ($provider === PaymentProvider::NETS) {
+            $merchantReference = $request->json('data.myReference');
+            if ($merchantReference) {
+                $contextId = Payment::query()->whereKey($merchantReference)->value('context_id');
+            } else {
+                $paymentId = $request->json('data.paymentId');
+                $contextId = Payment::query()->where('external_id', $paymentId)->value('context_id');
+            }
+
+            if (! $contextId) {
+                return response()->json(
+                    ['error' => 'Payment not found'],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+
+            $configResolver = app(PaymentProviderConfigResolverInterface::class);
+            $config = $configResolver->resolve(
+                $provider,
+                $contextId
+            );
+            $secret = $config->webhookSigningSecret;
+        } elseif ($provider === PaymentProvider::ADYEN) {
+            // Extract merchantReference from Adyen webhook payload
+            $merchantReference = $request->json('notificationItems.0.NotificationRequestItem.merchantReference');
+            // TODO: handle multi-payment/edge-case if needed
+            $contextId = Payment::query()->where('id', $merchantReference)->value('context_id');
+            if (! $contextId) {
+                return response()->json(
+                    ['error' => 'Payment not found'],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            $configResolver = app(PaymentProviderConfigResolverInterface::class);
+            $config = $configResolver->resolve(
+                $provider,
+                $contextId
+            );
+            $secret = $config->webhookSigningSecret;
+        } elseif ($provider === PaymentProvider::STRIPE) {
+            // Extract merchantReference from Stripe webhook payload
+            $merchantReference = $request->json('data.object.metadata.merchantReference');
+            $contextId = Payment::query()->where('id', $merchantReference)->value('context_id');
+            if (! $contextId) {
+                return response()->json(
+                    ['error' => 'Payment not found'],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            $configResolver = app(PaymentProviderConfigResolverInterface::class);
+            $config = $configResolver->resolve(
+                $provider,
+                $contextId
+            );
+
+            $secret = $config->webhookSigningSecret;
+        }
 
         $isAuthorized = match ($provider) {
             PaymentProvider::NETS => $this->authorizeNets($request, $secret),
@@ -69,7 +127,8 @@ class ProviderWebhookAuthorization
             );
 
             return true;
-        } catch (Exception) {
+        } catch (Exception $exception) {
+            report($exception);
             return false;
         }
     }

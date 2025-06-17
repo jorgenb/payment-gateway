@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('reference')->nullable();
 
             $table->string('context_id', 255)->nullable()->comment('Arbitrary context identifier used for resolving provider config. Set by the consuming app.');
+            $table->index('context_id');
             $table->json('metadata')->nullable();
 
             // Indicates the timestamp at which a payment should be manually captured.

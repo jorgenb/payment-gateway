@@ -16,6 +16,7 @@ if (! app()->environment('production')) {
         {
             Schema::create('fake_payables', function (Blueprint $table): void {
                 $table->uuid('id')->primary();
+                $table->json('data')->nullable();
                 $table->timestamps();
             });
         }

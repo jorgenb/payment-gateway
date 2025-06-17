@@ -29,6 +29,7 @@ class PaymentRequestData extends Data
         public readonly mixed $payable_type,
         public ?CarbonImmutable $capture_at = null,
         public ?bool $auto_capture = true,
+        public ?string $context_id = null,
     ) {}
 
     public static function rules(): array
@@ -41,6 +42,7 @@ class PaymentRequestData extends Data
             'payable_type' => ['required', 'string', Rule::in(array_map(fn ($case) => mb_strtolower($case->name), PayableType::cases()))],
             'capture_at' => 'nullable|date|after_or_equal:now',
             'auto_capture' => 'nullable|boolean',
+            'context_id' => 'nullable|string|max:255',
         ];
     }
 

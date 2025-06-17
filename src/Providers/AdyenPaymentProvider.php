@@ -15,6 +15,7 @@ use Adyen\Service\Checkout\PaymentsApi;
 use Bilberry\PaymentGateway\Data\PaymentProviderConfig;
 use Bilberry\PaymentGateway\Data\PaymentResponse;
 use Bilberry\PaymentGateway\Data\RefundResponse;
+use Bilberry\PaymentGateway\Data\WidgetMetadataData;
 use Bilberry\PaymentGateway\Enums\PaymentStatus;
 use Bilberry\PaymentGateway\Models\Payment;
 use Bilberry\PaymentGateway\Models\PaymentRefund;
@@ -57,11 +58,12 @@ class AdyenPaymentProvider extends BasePaymentProvider
             ->setValue($payment->amount_minor);
 
         $request = new CreateCheckoutSessionRequest;
-        $request->setReference(Str::upper($payment->id))
+        $request->setReference($payment->id)
             ->setAmount($amount)
             ->setMerchantAccount($config->merchantAccount)
             ->setCountryCode('NO') // TODO: Make this dynamic. FE should send country code or get from tenant config?
-            ->setReturnUrl($config->redirectUrl);
+            ->setReturnUrl($config->redirectUrl)
+            ->setMetadata($config->contextId ? ['contextId' => $config->contextId] : []);
 
         $captureDelay = $payment->getCaptureConfigurationForProvider();
         $request->setCaptureDelayHours($captureDelay);
@@ -70,25 +72,34 @@ class AdyenPaymentProvider extends BasePaymentProvider
         $response = $paymentsApi->sessions($request, ['idempotencyKey' => $idempotencyKey]);
 
         $status = PaymentStatus::INITIATED;
+        $externalId = $response->getId();
+        $sessionData = $response->getSessionData();
         $payment->update([
+            'context_id' => $config->contextId,
             'status' => $status,
-            'metadata' => [
-                'sessionId' => $response->getId(),
-                'sessionData' => $response->getSessionData(),
-            ],
+            'external_id' => $externalId,
+            'metadata' => WidgetMetadataData::from([
+                'clientKey' => $config->clientKey,
+                'sessionId' => $externalId,
+                'sessionData' => $sessionData
+            ])
         ]);
 
         $this->recordPaymentEvent(
             payment: $payment,
-            status: PaymentStatus::INITIATED,
+            status: $status,
             payload: $response->toArray()
         );
 
         return new PaymentResponse(
-            status: PaymentStatus::INITIATED,
+            status: $status,
             payment: $payment,
             responseData: $response->toArray(),
-            metadata: $payment->metadata,
+            metadata: WidgetMetadataData::from([
+                'clientKey' => $config->clientKey,
+                'sessionId' => $externalId,
+                'sessionData' => $sessionData
+            ])->toArray()
         );
     }
 

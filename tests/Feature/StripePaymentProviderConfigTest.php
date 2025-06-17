@@ -51,15 +51,16 @@ it('initiates a Stripe payment using the PaymentGateway service', function () {
     $requestData = PaymentRequestData::from($payload);
 
     // Provide a PaymentProviderConfig for the test
-    $config = new PaymentProviderConfig(
-        context_id: 'test_tenant',
-        apiKey: 'test_key_123',
-        environment: 'test',
-        merchantAccount: 'merchant_abc',
-        termsUrl: null,
-        redirectUrl: null,
-        webhookSigningSecret: null
-    );
+    $config = PaymentProviderConfig::from([
+        'contextId' => 'test_tenant',
+        'apiKey' => 'test_key_123',
+        'clientKey' => 'test_client_key_123',
+        'environment' => 'test',
+        'merchantAccount' => 'merchant_abc',
+        'termsUrl' => null,
+        'redirectUrl' => null,
+        'webhookSigningSecret' => null,
+    ]);
 
     // Act
     $gateway = app(PaymentGateway::class);
