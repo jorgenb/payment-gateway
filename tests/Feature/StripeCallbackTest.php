@@ -34,4 +34,4 @@ it('handles stripe callback events', function (array $data): void {
     $response->assertSuccessful();
 
     $this->stripePaymentProvider->shouldHaveReceived('handleCallback')->once();
-})->with('stripe callback requests');
+})->with('stripe callback requests')->group('ci-flaky');

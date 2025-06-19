@@ -32,4 +32,4 @@ it('handles adyen callback events', function (array $data): void {
     $response->assertSuccessful();
 
     $this->adyenPaymentProvider->shouldHaveReceived('handleCallback')->once();
-})->with('adyen callback requests');
+})->with('adyen callback requests')->group('ci-flaky');

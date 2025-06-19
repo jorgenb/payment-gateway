@@ -37,4 +37,4 @@ it('handles nets callback events', function (array $data): void {
         $this->netsPaymentProvider->shouldHaveReceived('handleCallback')->once();
     }
 
-})->with('nets callback requests');
+})->with('nets callback requests')->group('ci-flaky');

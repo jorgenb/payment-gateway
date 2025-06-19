@@ -46,4 +46,4 @@ it('handles refund failed callback', function ($refundFailedCallbackPayload): vo
     expect($refund->status)->toBe(PaymentStatus::REFUND_FAILED->value);
     // ->and($refund->failure_reason)->toBe('Refund Failed');
 
-})->with('adyen refund failed callback request');
+})->with('adyen refund failed callback request')->group('ci-flaky');

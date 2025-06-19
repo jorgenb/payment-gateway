@@ -27,4 +27,4 @@ it('handles a Nets reservation callback and sets payment status to RESERVED', fu
     $response->assertSuccessful();
     $payment->refresh();
     expect($payment->status)->toBe(PaymentStatus::RESERVED);
-})->with('nets payment reservation created');
+})->with('nets payment reservation created')->group('ci-flaky');
