@@ -51,7 +51,7 @@ class NetsCreatePaymentRequest extends Request implements HasBody
     {
         $webhookSigningSecret = $this->providerConfig->webhookSigningSecret;
         $callbackUrl = $this->getRoute();
-        $quickCheckout = true; // TODO: Add to paymentproviderconfig
+        $quickCheckout = true; //TODO: Add to paymentproviderconfig
 
         $body = [
             'myReference' => $this->payment->id,
@@ -140,9 +140,8 @@ class NetsCreatePaymentRequest extends Request implements HasBody
 
         ];
 
-        if ($quickCheckout) {
-            $body['checkout']['merchantHandlesConsumerData'] = true;
-        }
+        // TODO: Add api support for configuring the merchant's handling of consumer data
+        $body['checkout']['merchantHandlesConsumerData'] = true;
 
         return $body;
     }
