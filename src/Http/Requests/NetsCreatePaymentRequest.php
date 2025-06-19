@@ -51,7 +51,7 @@ class NetsCreatePaymentRequest extends Request implements HasBody
     {
         $webhookSigningSecret = $this->providerConfig->webhookSigningSecret;
         $callbackUrl = $this->getRoute();
-        $quickCheckout = true; //TODO: Add to paymentproviderconfig
+        $quickCheckout = true; // TODO: Add to paymentproviderconfig
 
         $body = [
             'myReference' => $this->payment->id,

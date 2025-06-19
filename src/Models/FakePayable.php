@@ -28,8 +28,11 @@ class FakePayable extends Model
     }
 
     protected $table = 'fake_payables';
+
     protected $fillable = ['*'];
+
     public $timestamps = false;
+
     protected $casts = [
         'data' => 'array',
     ];

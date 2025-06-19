@@ -93,7 +93,7 @@ class Payment extends Model
     ];
 
     protected $hidden = [
-        'payable_type'
+        'payable_type',
     ];
 
     public function events(): HasMany

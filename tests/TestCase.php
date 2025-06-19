@@ -48,7 +48,7 @@ class TestCase extends Orchestra
                             'merchantAccount' => 'MerchantB',
                             'termsUrl' => null,
                             'redirectUrl' => 'https://example.com/b-return',
-                            'webhookSigningSecret' => 'test_webhook_secret'
+                            'webhookSigningSecret' => 'test_webhook_secret',
                         ]);
                     }
 

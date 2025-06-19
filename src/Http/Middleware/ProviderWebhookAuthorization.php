@@ -129,6 +129,7 @@ class ProviderWebhookAuthorization
             return true;
         } catch (Exception $exception) {
             report($exception);
+
             return false;
         }
     }

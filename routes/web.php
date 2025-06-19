@@ -16,4 +16,3 @@ if (app()->environment(['local', 'testing', 'staging'])) {
             ->with('payments', $payments);
     })->name('payment-gateway-test-spa');
 }
-

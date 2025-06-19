@@ -4,7 +4,6 @@ namespace Bilberry\PaymentGateway\Data;
 
 use Spatie\LaravelData\Data;
 
-
 final class WidgetMetadataData extends Data
 {
     public function __construct(

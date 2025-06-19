@@ -32,4 +32,3 @@ Route::prefix('api/v1')->group(function (): void {
             ->name('api.payments.callback');
     });
 });
-

@@ -22,7 +22,6 @@ use Bilberry\PaymentGateway\Models\PaymentRefund;
 use Brick\Math\Exception\NumberFormatException;
 use Brick\Math\Exception\RoundingNecessaryException;
 use Brick\Money\Exception\UnknownCurrencyException;
-use Illuminate\Support\Str;
 use Throwable;
 
 class AdyenPaymentProvider extends BasePaymentProvider
@@ -81,8 +80,8 @@ class AdyenPaymentProvider extends BasePaymentProvider
             'metadata' => WidgetMetadataData::from([
                 'clientKey' => $config->clientKey,
                 'sessionId' => $externalId,
-                'sessionData' => $sessionData
-            ])
+                'sessionData' => $sessionData,
+            ]),
         ]);
 
         $this->recordPaymentEvent(
@@ -98,7 +97,7 @@ class AdyenPaymentProvider extends BasePaymentProvider
             metadata: WidgetMetadataData::from([
                 'clientKey' => $config->clientKey,
                 'sessionId' => $externalId,
-                'sessionData' => $sessionData
+                'sessionData' => $sessionData,
             ])->toArray()
         );
     }

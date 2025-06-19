@@ -17,27 +17,26 @@ use Spatie\LaravelData\Data;
  * This object is designed to be generic and consistent across all supported payment providers.
  * The consuming application is responsible for providing these values when initializing
  * a payment provider.
- *
  */
 final class PaymentProviderConfig extends Data
 {
     /**
      * Arbitrary context reference for config resolution, set by the consuming application (e.g. a tenant id).
+     *
      * @param  string  $contextId
-     * The API key used to configure the provider client.
+     *                             The API key used to configure the provider client.
      * @param  string  $apiKey
-     * The client key used for client-side SDK initialization (e.g., Adyen's clientKey).
+     *                          The client key used for client-side SDK initialization (e.g., Adyen's clientKey).
      * @param  string  $clientKey
-     * The environment in which the payment provider operates (e.g., 'live', 'test').
+     *                             The environment in which the payment provider operates (e.g., 'live', 'test').
      * @param  string  $environment
-     * The merchant account identifier.
+     *                               The merchant account identifier.
      * @param  string|null  $merchantAccount
-     * The URL to terms and conditions.
+     *                                        The URL to terms and conditions.
      * @param  string|null  $termsUrl
-     * The URL where the customer should be redirected after payment.
+     *                                 The URL where the customer should be redirected after payment.
      * @param  string|null  $redirectUrl
-     * The secret used to verify incoming webhook signatures from the payment provider.
-     * @param  string|null  $webhookSigningSecret
+     *                                    The secret used to verify incoming webhook signatures from the payment provider.
      */
     public function __construct(
         #[Required, StringType]

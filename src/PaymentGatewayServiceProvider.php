@@ -39,8 +39,7 @@ class PaymentGatewayServiceProvider extends PackageServiceProvider
 
         // Allow publishing of the package database seeder to the consuming application's seeder directory
         $this->publishes([
-            __DIR__ . '/../database/seeders/FakePayablesDatabaseSeeder.php' =>
-                database_path('seeders/FakePayablesDatabaseSeeder.php'),
+            __DIR__.'/../database/seeders/FakePayablesDatabaseSeeder.php' => database_path('seeders/FakePayablesDatabaseSeeder.php'),
         ], 'payment-gateway-seeders');
 
         $this->publishes([

@@ -15,7 +15,7 @@ class FakePayableFactory extends Factory
     {
         return [
             'id' => $this->faker->uuid,
-            'data' => null
+            'data' => null,
         ];
     }
 }
