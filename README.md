@@ -3,7 +3,11 @@
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/adventure-tech/payment-gateway/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/adventure-tech/payment-gateway/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/adventure-tech/payment-gateway/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/adventure-tech/payment-gateway/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+---
+> **payment-gateway** is a Laravel package that gives you a unified, provider-agnostic API for payments, refunds, and callbacks across Stripe, Adyen, and Nets. It handles all the webhook plumbing and common payment flows for you, so you can focus on your business logic—not provider quirks. Plug in your config resolver, secure your endpoints, and prosper.
+
+> In addition, this package ships with a GTA 5–inspired single-page application (SPA) that you can use to test and showcase the features of the payment gateway in style. The SPA lets you simulate payments and callbacks across supported providers, providing instant feedback in a familiar Los Santos vibe. Perfect for demos, QA, or development.
+---
 
 ## Installation
 
@@ -52,7 +56,7 @@ php artisan vendor:publish --tag="payment-gateway-views"
 ### Minimum Requirements
 
 - PHP 8.2 or higher  
-- Laravel 10.x or 11.x
+- Laravel 12.x
 
 ## Configuration: Registering the PaymentProviderConfigResolver
 
@@ -141,6 +145,7 @@ use Bilberry\PaymentGateway\Facades\PaymentGateway;
 
 // Build your DTO using ::from()
 $paymentRequestData = PaymentRequestData::from([
+    'context_id' => $contextId, // Optional: Tenant or user ID for multi-tenant apps
     'provider' => PaymentProvider::STRIPE, // Payment provider enum
     'amount_minor' => 10000, // Amount in the smallest currency unit (e.g., øre, cents)
     'currency' => 'NOK', // ISO 4217 currency code
